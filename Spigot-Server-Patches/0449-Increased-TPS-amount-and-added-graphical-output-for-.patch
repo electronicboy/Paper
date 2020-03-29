@@ -1,0 +1,981 @@
+From e7b59a2339378416e535cc7129e80eb55250c23f Mon Sep 17 00:00:00 2001
+From: TheVIperShow <thevipershowita@gmail.com>
+Date: Sun, 29 Mar 2020 15:31:48 +0200
+Subject: [PATCH] Increased TPS amount and added graphical output for tps
+ command
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index c9deaffc..8d8068f2 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1,11 +1,8 @@
+ package net.minecraft.server;
+ 
++import co.aikar.timings.MinecraftTimings;
+ import com.google.common.base.Splitter;
+-import co.aikar.timings.Timings;
+-import com.destroystokyo.paper.event.server.PaperServerListPingEvent;
+-import com.google.common.base.Stopwatch;
+ import com.google.common.collect.Lists;
+-import com.google.common.collect.Maps;
+ import com.google.gson.JsonElement;
+ import com.mojang.authlib.GameProfile;
+ import com.mojang.authlib.GameProfileRepository;
+@@ -16,7 +13,16 @@ import io.netty.buffer.ByteBuf;
+ import io.netty.buffer.ByteBufOutputStream;
+ import io.netty.buffer.Unpooled;
+ import it.unimi.dsi.fastutil.longs.LongIterator;
+-import java.awt.GraphicsEnvironment;
++import joptsimple.OptionSet;
++import org.apache.commons.lang3.Validate;
++import org.apache.logging.log4j.LogManager;
++import org.apache.logging.log4j.Logger;
++import org.bukkit.event.server.ServerLoadEvent;
++import org.spigotmc.SlackActivityAccountant;
++
++import javax.annotation.Nullable;
++import javax.imageio.ImageIO;
++import java.awt.*;
+ import java.awt.image.BufferedImage;
+ import java.io.BufferedWriter;
+ import java.io.File;
+@@ -33,41 +39,15 @@ import java.nio.file.Files;
+ import java.nio.file.Paths;
+ import java.security.KeyPair;
+ import java.text.SimpleDateFormat;
+-import java.util.ArrayList;
+-import java.util.Arrays;
+-import java.util.Base64;
+-import java.util.Collection;
+-import java.util.Collections;
+-import java.util.Comparator;
+-import java.util.Date;
+-import java.util.Iterator;
+ import java.util.List;
+-import java.util.Map;
+-import java.util.Optional;
+-import java.util.Random;
+-import java.util.UUID;
++import java.util.*;
+ import java.util.Map.Entry;
+ import java.util.concurrent.CompletableFuture;
+ import java.util.concurrent.Executor;
+ import java.util.function.BooleanSupplier;
+-import javax.annotation.Nullable;
+-import javax.imageio.ImageIO;
+-import joptsimple.NonOptionArgumentSpec;
+-import joptsimple.OptionParser;
+-import joptsimple.OptionSet;
+-import joptsimple.OptionSpec;
+-import org.apache.commons.lang3.Validate;
+-import org.apache.logging.log4j.LogManager;
+-import org.apache.logging.log4j.Logger;
++
+ // CraftBukkit start
+-import joptsimple.OptionSet;
+-import org.bukkit.Bukkit;
+-import org.bukkit.craftbukkit.CraftServer;
+-import org.bukkit.craftbukkit.Main;
+-import org.bukkit.event.server.ServerLoadEvent;
+ // CraftBukkit end
+-import co.aikar.timings.MinecraftTimings; // Paper
+-import org.spigotmc.SlackActivityAccountant; // Spigot
+ 
+ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTask> implements IMojangStatistics, ICommandListener, AutoCloseable, Runnable {
+ 
+@@ -105,7 +85,12 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     private String motd;
+     private int G;
+     private int H;
+-    public final long[] f = new long[100]; public long[] getTickTimes() { return f; } // Paper - OBFHELPER
++    public final long[] f = new long[100];
++
++    public long[] getTickTimes() {
++        return f;
++    } // Paper - OBFHELPER
++
+     @Nullable
+     private KeyPair I;
+     @Nullable
+@@ -133,8 +118,18 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         });
+     });
+     private long nextTick = SystemUtils.getMonotonicMillis();
+-    private long ab; final long getTickOversleepMaxTime() { return this.ab; } // Paper - OBFHELPER
+-    private boolean ac; final boolean hasExecutedTask() { return this.ac; } // Paper - OBFHELPER
++    private long ab;
++
++    final long getTickOversleepMaxTime() {
++        return this.ab;
++    } // Paper - OBFHELPER
++
++    private boolean ac;
++
++    final boolean hasExecutedTask() {
++        return this.ac;
++    } // Paper - OBFHELPER
++
+     private final IReloadableResourceManager ae;
+     private final ResourcePackRepository<ResourcePackLoader> resourcePackRepository;
+     @Nullable
+@@ -177,14 +172,28 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     public static final int TPS = 20;
+     public static final int TICK_TIME = 1000000000 / TPS;
+     private static final int SAMPLE_INTERVAL = 20; // Paper
+-    public final double[] recentTps = new double[ 3 ];
++    public final double[] recentTps = new double[30];
+     public final SlackActivityAccountant slackActivityAccountant = new SlackActivityAccountant();
+     // Spigot end
+ 
++    // Paper start
++    // making the array that will hold the TPS averages contain more values
++    public static final int TPS_SAMPLES = 30;
++    public final RollingAverage[] rollingAverages = new RollingAverage[TPS_SAMPLES];
++    // Paper end
++
+     public MinecraftServer(OptionSet options, Proxy proxy, DataFixer datafixer, CommandDispatcher commanddispatcher, YggdrasilAuthenticationService yggdrasilauthenticationservice, MinecraftSessionService minecraftsessionservice, GameProfileRepository gameprofilerepository, UserCache usercache, WorldLoadListenerFactory worldloadlistenerfactory, String s) {
+         super("Server");
+         this.ae = new ResourceManager(EnumResourcePackType.SERVER_DATA, this.serverThread);
+         SERVER = this; // Paper - better singleton
++
++        // Paper start
++        // initializing RollingAverages
++        for (int index = 0; index < TPS_SAMPLES; index++) {
++            rollingAverages[index] = new RollingAverage(60 * (index + 1));
++        }
++        // Paper end
++
+         this.resourcePackRepository = new ResourcePackRepository<>(ResourcePackLoader::new);
+         this.craftingManager = new CraftingManager();
+         this.tagRegistry = new TagRegistry();
+@@ -262,7 +271,8 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+                 private long b = SystemUtils.getMonotonicMillis();
+ 
+                 @Override
+-                public void a(IChatBaseComponent ichatbasecomponent) {}
++                public void a(IChatBaseComponent ichatbasecomponent) {
++                }
+ 
+                 @Override
+                 public void a(int i) {
+@@ -274,7 +284,8 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+                 }
+ 
+                 @Override
+-                public void c(IChatBaseComponent ichatbasecomponent) {}
++                public void c(IChatBaseComponent ichatbasecomponent) {
++                }
+             });
+         }
+ 
+@@ -546,11 +557,11 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         File mcMeta = new File(bukkitDataPackFolder, "pack.mcmeta");
+         try {
+             com.google.common.io.Files.write("{\n"
+-                    + "    \"pack\": {\n"
+-                    + "        \"description\": \"Data pack for resources provided by Bukkit plugins\",\n"
+-                    + "        \"pack_format\": " + SharedConstants.getGameVersion().getPackVersion() + "\n"
+-                    + "    }\n"
+-                    + "}\n", mcMeta, com.google.common.base.Charsets.UTF_8);
++                + "    \"pack\": {\n"
++                + "        \"description\": \"Data pack for resources provided by Bukkit plugins\",\n"
++                + "        \"pack_format\": " + SharedConstants.getGameVersion().getPackVersion() + "\n"
++                + "    }\n"
++                + "}\n", mcMeta, com.google.common.base.Charsets.UTF_8);
+         } catch (IOException ex) {
+             throw new RuntimeException("Could not initialize Bukkit datapack", ex);
+         }
+@@ -721,6 +732,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     // CraftBukkit start
+     private boolean hasStopped = false;
+     private final Object stopLock = new Object();
++
+     public final boolean hasStopped() {
+         synchronized (stopLock) {
+             return hasStopped;
+@@ -730,7 +742,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+ 
+     protected void stop() {
+         // CraftBukkit start - prevent double stopping on multiple threads
+-        synchronized(stopLock) {
++        synchronized (stopLock) {
+             if (hasStopped) return;
+             hasStopped = true;
+         }
+@@ -750,7 +762,10 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+             MinecraftServer.LOGGER.info("Saving players");
+             this.playerList.savePlayers();
+             this.playerList.shutdown(this.isRestarting); // Paper
+-            try { Thread.sleep(100); } catch (InterruptedException ex) {} // CraftBukkit - SPIGOT-625 - give server at least a chance to send packets
++            try {
++                Thread.sleep(100);
++            } catch (InterruptedException ex) {
++            } // CraftBukkit - SPIGOT-625 - give server at least a chance to send packets
+         }
+ 
+         MinecraftServer.LOGGER.info("Saving worlds");
+@@ -808,6 +823,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     public void safeShutdown(boolean flag) {
+         this.safeShutdown(flag, false);
+     }
++
+     public void safeShutdown(boolean flag, boolean isRestarting) {
+         this.isRunning = false;
+         this.isRestarting = isRestarting;
+@@ -823,9 +839,8 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     // Paper end
+ 
+     // Spigot Start
+-    private static double calcTps(double avg, double exp, double tps)
+-    {
+-        return ( avg * exp ) + ( tps * ( 1 - exp ) );
++    private static double calcTps(double avg, double exp, double tps) {
++        return (avg * exp) + (tps * (1 - exp));
+     }
+ 
+     // Paper start - Further improve server tick loop
+@@ -833,9 +848,6 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     private static final long MAX_CATCHUP_BUFFER = TICK_TIME * TPS * 60L;
+     private long lastTick = 0;
+     private long catchupTime = 0;
+-    public final RollingAverage tps1 = new RollingAverage(60);
+-    public final RollingAverage tps5 = new RollingAverage(60 * 5);
+-    public final RollingAverage tps15 = new RollingAverage(60 * 15);
+ 
+     public static class RollingAverage {
+         private final int size;
+@@ -860,6 +872,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         private static java.math.BigDecimal dec(long t) {
+             return new java.math.BigDecimal(t);
+         }
++
+         public void add(java.math.BigDecimal x, long t) {
+             time -= times[index];
+             total = total.subtract(samples[index].multiply(dec(times[index])));
+@@ -876,6 +889,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+             return total.divide(dec(time), 30, java.math.RoundingMode.HALF_UP).doubleValue();
+         }
+     }
++
+     private static final java.math.BigDecimal TPS_BASE = new java.math.BigDecimal(1E9).multiply(new java.math.BigDecimal(SAMPLE_INTERVAL));
+     // Paper End
+     // Spigot End
+@@ -890,7 +904,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+ 
+                 // Spigot start
+                 org.spigotmc.WatchdogThread.hasStarted = true; // Paper
+-                Arrays.fill( recentTps, 20 );
++                Arrays.fill(recentTps, 20.00);
+                 long start = System.nanoTime(), curTime, tickSection = start; // Paper - Further improve server tick loop
+                 lastTick = start - TICK_TIME; // Paper
+                 while (this.isRunning) {
+@@ -905,17 +919,22 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+                         this.lastOverloadTime = this.nextTick;
+                     }
+ 
+-                    if ( ++MinecraftServer.currentTick % SAMPLE_INTERVAL == 0 )
+-                    {
++                    if (++MinecraftServer.currentTick % SAMPLE_INTERVAL == 0) {
+                         final long diff = curTime - tickSection;
+                         java.math.BigDecimal currentTps = TPS_BASE.divide(new java.math.BigDecimal(diff), 30, java.math.RoundingMode.HALF_UP);
+-                        tps1.add(currentTps, diff);
+-                        tps5.add(currentTps, diff);
+-                        tps15.add(currentTps, diff);
+-                        // Backwards compat with bad plugins
+-                        recentTps[0] = tps1.getAverage();
+-                        recentTps[1] = tps5.getAverage();
+-                        recentTps[2] = tps15.getAverage();
++
++
++                        // Paper start
++                        // updating TPS values ->
++                        for (int index = 0; index < rollingAverages.length; index++) {
++                            rollingAverages[index].add(currentTps, diff);
++                        }
++
++                        // This is for backwards compatibility with old plugins
++
++                        for (int index = 0; index < recentTps.length; index++) {
++                            recentTps[index] = rollingAverages[index].getAverage();
++                        }
+                         // Paper end
+                         tickSection = curTime;
+                     }
+@@ -946,9 +965,8 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         } catch (Throwable throwable) {
+             MinecraftServer.LOGGER.error("Encountered an unexpected exception", throwable);
+             // Spigot Start
+-            if ( throwable.getCause() != null )
+-            {
+-                MinecraftServer.LOGGER.error( "\tCause of unexpected exception was", throwable.getCause() );
++            if (throwable.getCause() != null) {
++                MinecraftServer.LOGGER.error("\tCause of unexpected exception was", throwable.getCause());
+             }
+             // Spigot End
+             CrashReport crashreport;
+@@ -1091,9 +1109,11 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         return new File(".");
+     }
+ 
+-    protected void a(CrashReport crashreport) {}
++    protected void a(CrashReport crashreport) {
++    }
+ 
+-    protected void exit() {}
++    protected void exit() {
++    }
+ 
+     protected void a(BooleanSupplier booleansupplier) {
+         co.aikar.timings.TimingsManager.FULL_SERVER_TICK.startTiming(); // Paper
+@@ -1106,7 +1126,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         // Paper end
+         this.slackActivityAccountant.tickStarted(); // Spigot
+         long i = SystemUtils.getMonotonicNanos();
+-        new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.ticks+1).callEvent(); // Paper
++        new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.ticks + 1).callEvent(); // Paper
+ 
+         ++this.ticks;
+         this.b(booleansupplier);
+@@ -1125,26 +1145,26 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         }
+ 
+         //if (autosavePeriod > 0 && this.ticks % autosavePeriod == 0) { // CraftBukkit // Paper - move down
+-            //MinecraftServer.LOGGER.debug("Autosave started"); // Paper
+-            serverAutoSave = (autosavePeriod > 0 && this.ticks % autosavePeriod == 0); // Paper
+-            this.methodProfiler.enter("save");
+-            if (autosavePeriod > 0 && this.ticks % autosavePeriod == 0) { // Paper
++        //MinecraftServer.LOGGER.debug("Autosave started"); // Paper
++        serverAutoSave = (autosavePeriod > 0 && this.ticks % autosavePeriod == 0); // Paper
++        this.methodProfiler.enter("save");
++        if (autosavePeriod > 0 && this.ticks % autosavePeriod == 0) { // Paper
+             this.playerList.savePlayers();
+-            }// Paper
+-            // Paper start
+-            for (WorldServer world : getWorlds()) {
+-                if (world.paperConfig.autoSavePeriod > 0) {
+-                    try {
+-                        world.saveIncrementally(serverAutoSave);
+-                    } catch (ExceptionWorldConflict exceptionWorldConflict) {
+-                        MinecraftServer.LOGGER.warn(exceptionWorldConflict.getMessage());
+-                    }
++        }// Paper
++        // Paper start
++        for (WorldServer world : getWorlds()) {
++            if (world.paperConfig.autoSavePeriod > 0) {
++                try {
++                    world.saveIncrementally(serverAutoSave);
++                } catch (ExceptionWorldConflict exceptionWorldConflict) {
++                    MinecraftServer.LOGGER.warn(exceptionWorldConflict.getMessage());
+                 }
+             }
+-            // Paper end
++        }
++        // Paper end
+ 
+-            this.methodProfiler.exit();
+-            //MinecraftServer.LOGGER.debug("Autosave finished"); // Paper
++        this.methodProfiler.exit();
++        //MinecraftServer.LOGGER.debug("Autosave finished"); // Paper
+         //} // Paper
+ 
+         this.methodProfiler.enter("snooper");
+@@ -1175,7 +1195,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         // Paper start
+         long endTime = System.nanoTime();
+         long remaining = (TICK_TIME - (endTime - lastTick)) - catchupTime;
+-        new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.ticks, ((double)(endTime - lastTick) / 1000000D), remaining).callEvent();
++        new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.ticks, ((double) (endTime - lastTick) / 1000000D), remaining).callEvent();
+         // Paper end
+         co.aikar.timings.TimingsManager.FULL_SERVER_TICK.stopTiming(); // Paper
+     }
+@@ -1224,7 +1244,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         while (iterator.hasNext()) {
+             WorldServer worldserver = (WorldServer) iterator.next();
+ 
+-            worldserver.hasPhysicsEvent =  org.bukkit.event.block.BlockPhysicsEvent.getHandlerList().getRegisteredListeners().length > 0; // Paper
++            worldserver.hasPhysicsEvent = org.bukkit.event.block.BlockPhysicsEvent.getHandlerList().getRegisteredListeners().length > 0; // Paper
+             TileEntityHopper.skipHopperEvents = worldserver.paperConfig.disableHopperMoveEvents || org.bukkit.event.inventory.InventoryMoveItemEvent.getHandlerList().getRegisteredListeners().length == 0; // Paper
+             if (true || worldserver.worldProvider.getDimensionManager() == DimensionManager.OVERWORLD || this.getAllowNether()) { // CraftBukkit
+                 this.methodProfiler.a(() -> {
+@@ -1335,12 +1355,11 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+             }
+ 
+             // Spigot Start
+-            boolean eulaAgreed = Boolean.getBoolean( "com.mojang.eula.agree" );
+-            if ( eulaAgreed )
+-            {
+-                System.err.println( "You have used the Spigot command line EULA agreement flag." );
+-                System.err.println( "By using this setting you are indicating your agreement to Mojang's EULA (https://account.mojang.com/documents/minecraft_eula)." );
+-                System.err.println( "If you do not agree to the above EULA please stop your server and remove this flag immediately." );
++            boolean eulaAgreed = Boolean.getBoolean("com.mojang.eula.agree");
++            if (eulaAgreed) {
++                System.err.println("You have used the Spigot command line EULA agreement flag.");
++                System.err.println("By using this setting you are indicating your agreement to Mojang's EULA (https://account.mojang.com/documents/minecraft_eula).");
++                System.err.println("If you do not agree to the above EULA please stop your server and remove this flag immediately.");
+             }
+             // Spigot End
+             if (!eula.a() && !eulaAgreed) { // Spigot
+@@ -1817,7 +1836,10 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+         this.H = i;
+     }
+ 
+-    public final MinecraftSessionService getSessionService() { return this.getMinecraftSessionService(); } // Paper - OBFHELPER
++    public final MinecraftSessionService getSessionService() {
++        return this.getMinecraftSessionService();
++    } // Paper - OBFHELPER
++
+     public MinecraftSessionService getMinecraftSessionService() {
+         return this.minecraftSessionService;
+     }
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index b9a398bc..7736404c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -17,96 +17,20 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
+ import io.netty.buffer.ByteBuf;
+ import io.netty.buffer.ByteBufOutputStream;
+ import io.netty.buffer.Unpooled;
+-import java.awt.image.BufferedImage;
+-import java.io.File;
+-import java.io.FileInputStream;
+-import java.io.FileNotFoundException;
+-import java.io.IOException;
+-import java.io.InputStreamReader;
+-import java.nio.ByteBuffer;
+-import java.nio.charset.StandardCharsets;
+-import java.util.ArrayList;
+-import java.util.Arrays;
+-import java.util.Base64;
+-import java.util.Collections;
+-import java.util.HashSet;
+-import java.util.Iterator;
+-import java.util.LinkedHashMap;
+-import java.util.LinkedHashSet;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Set;
+-import java.util.UUID;
+-import java.util.function.Consumer;
+-import java.util.logging.Level;
+-import java.util.logging.Logger;
+-import javax.imageio.ImageIO;
+ import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+-import net.minecraft.server.Advancement;
+-import net.minecraft.server.ArgumentEntity;
+-import net.minecraft.server.Block;
+-import net.minecraft.server.BlockPosition;
+-import net.minecraft.server.BossBattleCustom;
+-import net.minecraft.server.CommandDispatcher;
+-import net.minecraft.server.CommandListenerWrapper;
+-import net.minecraft.server.DedicatedPlayerList;
+-import net.minecraft.server.DedicatedServer;
+-import net.minecraft.server.DedicatedServerProperties;
+-import net.minecraft.server.DedicatedServerSettings;
+-import net.minecraft.server.DimensionManager;
+-import net.minecraft.server.Enchantments;
+-import net.minecraft.server.EntityPlayer;
+-import net.minecraft.server.EnumDifficulty;
+-import net.minecraft.server.EnumGamemode;
+-import net.minecraft.server.IRecipe;
+-import net.minecraft.server.Item;
+-import net.minecraft.server.ItemWorldMap;
+-import net.minecraft.server.Items;
+-import net.minecraft.server.JsonListEntry;
+-import net.minecraft.server.LootTableRegistry;
+-import net.minecraft.server.MapIcon;
+-import net.minecraft.server.MinecraftKey;
+-import net.minecraft.server.MobEffects;
+-import net.minecraft.server.PlayerList;
+-import net.minecraft.server.ServerCommand;
+-import net.minecraft.server.TagsServer;
+-import net.minecraft.server.TicketType;
+-import net.minecraft.server.Vec3D;
+-import net.minecraft.server.WorldData;
+-import net.minecraft.server.WorldMap;
+-import net.minecraft.server.WorldNBTStorage;
+-import net.minecraft.server.WorldServer;
+-import net.minecraft.server.WorldSettings;
++import net.md_5.bungee.api.chat.BaseComponent;
+ import net.minecraft.server.WorldType;
++import net.minecraft.server.*;
+ import org.apache.commons.lang.Validate;
+ import org.apache.commons.lang3.StringUtils;
+-import org.bukkit.BanList;
+-import org.bukkit.Bukkit;
+-import org.bukkit.ChatColor;
+-import org.bukkit.GameMode;
+-import org.bukkit.Keyed;
+-import org.bukkit.Location;
+-import org.bukkit.NamespacedKey;
+-import org.bukkit.OfflinePlayer;
+-import org.bukkit.Server;
+-import org.bukkit.StructureType;
+-import org.bukkit.UnsafeValues;
+-import org.bukkit.Warning.WarningState;
++import org.bukkit.*;
+ import org.bukkit.World;
++import org.bukkit.Warning.WarningState;
+ import org.bukkit.World.Environment;
+-import org.bukkit.WorldCreator;
+ import org.bukkit.block.data.BlockData;
+-import org.bukkit.boss.BarColor;
+-import org.bukkit.boss.BarFlag;
+-import org.bukkit.boss.BarStyle;
+-import org.bukkit.boss.BossBar;
+-import org.bukkit.boss.KeyedBossBar;
+-import org.bukkit.command.Command;
++import org.bukkit.boss.*;
+ import org.bukkit.command.CommandException;
+-import org.bukkit.command.CommandSender;
+-import org.bukkit.command.ConsoleCommandSender;
+-import org.bukkit.command.PluginCommand;
+-import org.bukkit.command.SimpleCommandMap;
++import org.bukkit.command.*;
+ import org.bukkit.configuration.ConfigurationSection;
+ import org.bukkit.configuration.file.YamlConfiguration;
+ import org.bukkit.configuration.serialization.ConfigurationSerialization;
+@@ -120,18 +44,7 @@ import org.bukkit.craftbukkit.command.VanillaCommandWrapper;
+ import org.bukkit.craftbukkit.entity.CraftPlayer;
+ import org.bukkit.craftbukkit.generator.CraftChunkData;
+ import org.bukkit.craftbukkit.help.SimpleHelpMap;
+-import org.bukkit.craftbukkit.inventory.CraftBlastingRecipe;
+-import org.bukkit.craftbukkit.inventory.CraftCampfireRecipe;
+-import org.bukkit.craftbukkit.inventory.CraftFurnaceRecipe;
+-import org.bukkit.craftbukkit.inventory.CraftItemFactory;
+-import org.bukkit.craftbukkit.inventory.CraftItemStack;
+-import org.bukkit.craftbukkit.inventory.CraftMerchantCustom;
+-import org.bukkit.craftbukkit.inventory.CraftRecipe;
+-import org.bukkit.craftbukkit.inventory.CraftShapedRecipe;
+-import org.bukkit.craftbukkit.inventory.CraftShapelessRecipe;
+-import org.bukkit.craftbukkit.inventory.CraftSmokingRecipe;
+-import org.bukkit.craftbukkit.inventory.CraftStonecuttingRecipe;
+-import org.bukkit.craftbukkit.inventory.RecipeIterator;
++import org.bukkit.craftbukkit.inventory.*;
+ import org.bukkit.craftbukkit.inventory.util.CraftInventoryCreator;
+ import org.bukkit.craftbukkit.map.CraftMapView;
+ import org.bukkit.craftbukkit.metadata.EntityMetadataStore;
+@@ -142,16 +55,11 @@ import org.bukkit.craftbukkit.scheduler.CraftScheduler;
+ import org.bukkit.craftbukkit.scoreboard.CraftScoreboardManager;
+ import org.bukkit.craftbukkit.tag.CraftBlockTag;
+ import org.bukkit.craftbukkit.tag.CraftItemTag;
+-import org.bukkit.craftbukkit.util.CraftChatMessage;
+-import org.bukkit.craftbukkit.util.CraftIconCache;
+-import org.bukkit.craftbukkit.util.CraftMagicNumbers;
+-import org.bukkit.craftbukkit.util.CraftNamespacedKey;
+-import org.bukkit.craftbukkit.util.DatFileFilter;
+-import org.bukkit.craftbukkit.util.Versioning;
++import org.bukkit.craftbukkit.util.*;
+ import org.bukkit.craftbukkit.util.permissions.CraftDefaultPermissions;
+ import org.bukkit.entity.Entity;
+ import org.bukkit.entity.Player;
+-import org.bukkit.event.command.UnknownCommandEvent; // Paper
++import org.bukkit.event.command.UnknownCommandEvent;
+ import org.bukkit.event.inventory.InventoryType;
+ import org.bukkit.event.player.PlayerChatTabCompleteEvent;
+ import org.bukkit.event.server.BroadcastMessageEvent;
+@@ -162,29 +70,14 @@ import org.bukkit.event.world.WorldLoadEvent;
+ import org.bukkit.event.world.WorldUnloadEvent;
+ import org.bukkit.generator.ChunkGenerator;
+ import org.bukkit.help.HelpMap;
+-import org.bukkit.inventory.BlastingRecipe;
+-import org.bukkit.inventory.CampfireRecipe;
+-import org.bukkit.inventory.ComplexRecipe;
+ import org.bukkit.inventory.FurnaceRecipe;
+-import org.bukkit.inventory.Inventory;
+-import org.bukkit.inventory.InventoryHolder;
+ import org.bukkit.inventory.ItemStack;
+-import org.bukkit.inventory.Merchant;
+-import org.bukkit.inventory.Recipe;
+-import org.bukkit.inventory.ShapedRecipe;
+-import org.bukkit.inventory.ShapelessRecipe;
+-import org.bukkit.inventory.SmokingRecipe;
+-import org.bukkit.inventory.StonecuttingRecipe;
++import org.bukkit.inventory.*;
+ import org.bukkit.loot.LootTable;
+ import org.bukkit.map.MapView;
+ import org.bukkit.permissions.Permissible;
+ import org.bukkit.permissions.Permission;
+-import org.bukkit.plugin.Plugin;
+-import org.bukkit.plugin.PluginLoadOrder;
+-import org.bukkit.plugin.PluginManager;
+-import org.bukkit.plugin.ServicesManager;
+-import org.bukkit.plugin.SimplePluginManager;
+-import org.bukkit.plugin.SimpleServicesManager;
++import org.bukkit.plugin.*;
+ import org.bukkit.plugin.java.JavaPluginLoader;
+ import org.bukkit.plugin.messaging.Messenger;
+ import org.bukkit.plugin.messaging.StandardMessenger;
+@@ -197,10 +90,17 @@ import org.yaml.snakeyaml.Yaml;
+ import org.yaml.snakeyaml.constructor.SafeConstructor;
+ import org.yaml.snakeyaml.error.MarkedYAMLException;
+ 
+-import net.md_5.bungee.api.chat.BaseComponent; // Spigot
+-
+-import javax.annotation.Nullable; // Paper
+-import javax.annotation.Nonnull; // Paper
++import javax.annotation.Nonnull;
++import javax.annotation.Nullable;
++import javax.imageio.ImageIO;
++import java.awt.image.BufferedImage;
++import java.io.*;
++import java.nio.ByteBuffer;
++import java.nio.charset.StandardCharsets;
++import java.util.*;
++import java.util.function.Consumer;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ public final class CraftServer implements Server {
+     private final String serverName = "Paper"; // Paper
+@@ -411,7 +311,7 @@ public final class CraftServer implements Server {
+         for (CommandNode<CommandListenerWrapper> cmd : dispatcher.a().getRoot().getChildren()) {
+             // Spigot start
+             VanillaCommandWrapper wrapper = new VanillaCommandWrapper(dispatcher, cmd);
+-            if (org.spigotmc.SpigotConfig.replaceCommands.contains( wrapper.getName() ) ) {
++            if (org.spigotmc.SpigotConfig.replaceCommands.contains(wrapper.getName())) {
+                 if (first) {
+                     commandMap.register("minecraft", wrapper);
+                 }
+@@ -702,7 +602,7 @@ public final class CraftServer implements Server {
+     // NOTE: Should only be called from DedicatedServer.ah()
+     public boolean dispatchServerCommand(CommandSender sender, ServerCommand serverCommand) {
+         if (sender instanceof Conversable) {
+-            Conversable conversable = (Conversable)sender;
++            Conversable conversable = (Conversable) sender;
+ 
+             if (conversable.isConversing()) {
+                 conversable.acceptConversationInput(serverCommand.command);
+@@ -861,7 +761,8 @@ public final class CraftServer implements Server {
+         while (pollCount < 50 && getScheduler().getActiveWorkers().size() > 0) {
+             try {
+                 Thread.sleep(50);
+-            } catch (InterruptedException e) {}
++            } catch (InterruptedException e) {
++            }
+             pollCount++;
+         }
+ 
+@@ -903,7 +804,7 @@ public final class CraftServer implements Server {
+         }
+     }
+ 
+-    @SuppressWarnings({ "unchecked", "finally" })
++    @SuppressWarnings({"unchecked", "finally"})
+     private void loadCustomPermissions() {
+         File file = new File(configuration.getString("settings.permissions-file"));
+         FileInputStream stream;
+@@ -931,7 +832,8 @@ public final class CraftServer implements Server {
+         } finally {
+             try {
+                 stream.close();
+-            } catch (IOException ex) {}
++            } catch (IOException ex) {
++            }
+         }
+ 
+         if (perms == null) {
+@@ -1007,7 +909,7 @@ public final class CraftServer implements Server {
+                     break;
+                 }
+             }
+-        } while(used);
++        } while (used);
+         boolean hardcore = creator.hardcore();
+ 
+         WorldNBTStorage sdm = new WorldNBTStorage(getWorldContainer(), name, getServer(), getHandle().getServer().dataConverterManager);
+@@ -1414,8 +1316,8 @@ public final class CraftServer implements Server {
+         GameProfile profile;
+         // Only fetch an online UUID in online mode
+         if (net.minecraft.server.MinecraftServer.getServer().getOnlineMode()
+-                || (org.spigotmc.SpigotConfig.bungee && com.destroystokyo.paper.PaperConfig.bungeeOnlineMode)) {
+-            profile = console.getUserCache().getProfile( name );
++            || (org.spigotmc.SpigotConfig.bungee && com.destroystokyo.paper.PaperConfig.bungeeOnlineMode)) {
++            profile = console.getUserCache().getProfile(name);
+         } else {
+             // Make an OfflinePlayer using an offline mode UUID since the name has no profile
+             profile = new GameProfile(UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(Charsets.UTF_8)), name);
+@@ -1435,10 +1337,10 @@ public final class CraftServer implements Server {
+             // Spigot Start
+             GameProfile profile = null;
+             // Only fetch an online UUID in online mode
+-            if ( getOnlineMode()
+-                    || com.destroystokyo.paper.PaperConfig.isProxyOnlineMode() ) // Paper - Handle via setting
++            if (getOnlineMode()
++                || com.destroystokyo.paper.PaperConfig.isProxyOnlineMode()) // Paper - Handle via setting
+             {
+-                profile = console.getUserCache().getProfile( name );
++                profile = console.getUserCache().getProfile(name);
+             }
+             // Spigot end
+             if (profile == null) {
+@@ -1514,12 +1416,12 @@ public final class CraftServer implements Server {
+     public BanList getBanList(BanList.Type type) {
+         Validate.notNull(type, "Type cannot be null");
+ 
+-        switch(type){
+-        case IP:
+-            return new CraftIpBanList(playerList.getIPBans());
+-        case NAME:
+-        default:
+-            return new CraftProfileBanList(playerList.getProfileBans());
++        switch (type) {
++            case IP:
++                return new CraftIpBanList(playerList.getIPBans());
++            case NAME:
++            default:
++                return new CraftProfileBanList(playerList.getProfileBans());
+         }
+     }
+ 
+@@ -1739,8 +1641,7 @@ public final class CraftServer implements Server {
+ 
+     public List<String> tabCompleteCommand(Player player, String message, WorldServer world, Vec3D pos) {
+         // Spigot Start
+-        if ( (org.spigotmc.SpigotConfig.tabComplete < 0 || message.length() <= org.spigotmc.SpigotConfig.tabComplete) && !message.contains( " " ) )
+-        {
++        if ((org.spigotmc.SpigotConfig.tabComplete < 0 || message.length() <= org.spigotmc.SpigotConfig.tabComplete) && !message.contains(" ")) {
+             return ImmutableList.of();
+         }
+         // Spigot End
+@@ -2044,41 +1945,57 @@ public final class CraftServer implements Server {
+     }
+ 
+     // Paper - Add getTPS API - Further improve tick loop
++    // modified in order to provide compatibility
+     @Override
+     public double[] getTPS() {
+-        return new double[] {
+-                net.minecraft.server.MinecraftServer.getServer().tps1.getAverage(),
+-                net.minecraft.server.MinecraftServer.getServer().tps5.getAverage(),
+-                net.minecraft.server.MinecraftServer.getServer().tps15.getAverage()
++        return new double[]{
++            MinecraftServer.getServer().rollingAverages[0].getAverage(),
++            MinecraftServer.getServer().rollingAverages[4].getAverage(),
++            MinecraftServer.getServer().rollingAverages[14].getAverage()
+         };
+     }
+     // Paper end
+ 
+-    private final Spigot spigot = new Spigot()
+-    {
++    // Paper start
++    // Adding a non conflicting method to obtain more TPS averages
++    /**
++     * Returns the current server TPS from the specified time interval
++     * @param indexes any integer from 0 to 29
++     * @return current server TPS.
++     */
++    @Override
++    public double[] getTPS(@Nonnull int... indexes) {
++        int count = 0;
++        final double tpsArray[] = new double[indexes.length];
++        for (int index : indexes) {
++            tpsArray[count] = MinecraftServer.getServer().rollingAverages[index].getAverage();
++            count += 1;
++        }
++        return tpsArray;
++    }
++
++    // Paper end
++
++    private final Spigot spigot = new Spigot() {
+ 
+         @Deprecated
+         @Override
+-        public YamlConfiguration getConfig()
+-        {
++        public YamlConfiguration getConfig() {
+             return org.spigotmc.SpigotConfig.config;
+         }
+ 
+         @Override
+-        public YamlConfiguration getBukkitConfig()
+-        {
++        public YamlConfiguration getBukkitConfig() {
+             return configuration;
+         }
+ 
+         @Override
+-        public YamlConfiguration getSpigotConfig()
+-        {
++        public YamlConfiguration getSpigotConfig() {
+             return org.spigotmc.SpigotConfig.config;
+         }
+ 
+         @Override
+-        public YamlConfiguration getPaperConfig()
+-        {
++        public YamlConfiguration getPaperConfig() {
+             return com.destroystokyo.paper.PaperConfig.config;
+         }
+ 
+@@ -2102,8 +2019,7 @@ public final class CraftServer implements Server {
+         }
+     };
+ 
+-    public Spigot spigot()
+-    {
++    public Spigot spigot() {
+         return spigot;
+     }
+ 
+@@ -2158,8 +2074,8 @@ public final class CraftServer implements Server {
+     @Override
+     public boolean reloadCommandAliases() {
+         Set<String> removals = getCommandAliases().keySet().stream()
+-                .map(key -> key.toLowerCase(java.util.Locale.ENGLISH))
+-                .collect(java.util.stream.Collectors.toSet());
++            .map(key -> key.toLowerCase(java.util.Locale.ENGLISH))
++            .collect(java.util.stream.Collectors.toSet());
+         getCommandMap().getKnownCommands().keySet().removeIf(removals::contains);
+         File file = getCommandsConfigFile();
+         try {
+@@ -2198,7 +2114,7 @@ public final class CraftServer implements Server {
+     public com.destroystokyo.paper.profile.PlayerProfile createProfile(@Nullable UUID uuid, @Nullable String name) {
+         Player player = uuid != null ? Bukkit.getPlayer(uuid) : (name != null ? Bukkit.getPlayerExact(name) : null);
+         if (player != null) {
+-            return new com.destroystokyo.paper.profile.CraftPlayerProfile((CraftPlayer)player);
++            return new com.destroystokyo.paper.profile.CraftPlayerProfile((CraftPlayer) player);
+         }
+         return new com.destroystokyo.paper.profile.CraftPlayerProfile(uuid, name);
+     }
+diff --git a/src/main/java/org/spigotmc/TicksPerSecondCommand.java b/src/main/java/org/spigotmc/TicksPerSecondCommand.java
+index 6d21c326..b6ff6a0a 100644
+--- a/src/main/java/org/spigotmc/TicksPerSecondCommand.java
++++ b/src/main/java/org/spigotmc/TicksPerSecondCommand.java
+@@ -1,44 +1,109 @@
+ package org.spigotmc;
+ 
+-import org.bukkit.ChatColor;
++import org.bukkit.Bukkit;
+ import org.bukkit.command.Command;
+ import org.bukkit.command.CommandSender;
+ 
+-public class TicksPerSecondCommand extends Command
+-{
++import java.lang.management.ManagementFactory;
++import java.lang.management.RuntimeMXBean;
++import java.util.LinkedList;
+ 
+-    public TicksPerSecondCommand(String name)
+-    {
+-        super( name );
++public class TicksPerSecondCommand extends Command {
++
++    public TicksPerSecondCommand(String name) {
++        super(name);
+         this.description = "Gets the current ticks per second for the server";
+         this.usageMessage = "/tps";
+-        this.setPermission( "bukkit.command.tps" );
++        this.setPermission("bukkit.command.tps");
++    }
++
++
++    // Paper start
++
++    /**
++     * Get JVM formatted uptime
++     *
++     * @return the uptime
++     */
++    private String getUptime() {
++
++        final RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
++
++        long uptime = runtimeMXBean.getUptime();
++
++        return uptime / (60_000) <= 15 ? uptime / 1_000 <= 60 ? uptime / 1_000 + " seconds" : uptime / 60_000 + " minutes" : "15* minutes";
++
+     }
+ 
++    /**
++     * Creates a graphic table representing the server's TPS
++     *
++     * @param values the TPS values
++     * @param ROWS   the rows of the table (the bigger , the higher it will be)
++     * @return a LinkedList of rows, ordered from top to bottom of the char
++     */
++    public static LinkedList<String> createTable(double values[], final int ROWS) {
++
++        final LinkedList<String> completeTable = new LinkedList<>();
++
++        for (int r = 0; r < (ROWS - 1); r++) {
++            final StringBuilder stringBuilder = new StringBuilder();
++            for (double value : values) {
++                stringBuilder.append(value + (r + 1) > 20 ? "::" : " ");
++            }
++            completeTable.addLast(stringBuilder.reverse().insert(0, "&a").toString());
++        }
++        return completeTable;
++    }
++
++
++    /**
++     * This methods sends what will be the output of the /tps command
++     * to the target CommandSender, it will have a header with the averages
++     * values from 1,5,15,30 minutes ago.
++     * Below it a TPS graph will be shown , it will have time on the ordinate going from 1-30min,
++     * meanwhile on the abscissa we'll find the TPS average value that goes from 0-20
++     *
++     * @param tpsArray The TPS averages that will be used to generate the graph.
++     * @param sender   The target that will recieve the /tps command output
++     */
++    private void sendGraphic(double[] tpsArray, CommandSender sender) {
++
++        sender.sendColoredMessage(String.format("&6TPS Stats [1m], [5m], [15m], [30m]: &a%.2f %.2f %.2f %.2f",
++
++            tpsArray[0], tpsArray[4], tpsArray[14], tpsArray[29]));
++
++        sender.sendColoredMessage(String.format("&7----------------&2[&a&oTPS Graph (%s)&2]&7----------------&r", getUptime()));
++
++        final LinkedList<String> table = createTable(tpsArray, 10);
++
++        table.forEach(sender::sendColoredMessage);
++    }
++
++    // Paper end end
++
++
+     @Override
+-    public boolean execute(CommandSender sender, String currentAlias, String[] args)
+-    {
+-        if ( !testPermission( sender ) )
+-        {
++
++    public boolean execute(CommandSender sender, String currentAlias, String[] args) {
++
++        if (!testPermission(sender)) {
++
+             return true;
++
+         }
+ 
+         // Paper start - Further improve tick handling
+-        double[] tps = org.bukkit.Bukkit.getTPS();
+-        String[] tpsAvg = new String[tps.length];
+ 
+-        for ( int i = 0; i < tps.length; i++) {
+-            tpsAvg[i] = format( tps[i] );
+-        }
+-        sender.sendMessage( ChatColor.GOLD + "TPS from last 1m, 5m, 15m: " + org.apache.commons.lang.StringUtils.join(tpsAvg, ", "));
++        // Paper start - define indexes
++
++        final double[] tps = Bukkit.getTPS(0,1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29);
++
++        sendGraphic(tps, sender);
++
+         // Paper end
+ 
+         return true;
+-    }
+ 
+-    private static String format(double tps) // Paper - Made static
+-    {
+-        return ( ( tps > 18.0 ) ? ChatColor.GREEN : ( tps > 16.0 ) ? ChatColor.YELLOW : ChatColor.RED ).toString()
+-                + ( ( tps > 20.0 ) ? "*" : "" ) + Math.min( Math.round( tps * 100.0 ) / 100.0, 20.0 );
+     }
+ }
+-- 
+2.21.1 (Apple Git-122.3)
+

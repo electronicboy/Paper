@@ -1,0 +1,1003 @@
+From fdba5039c8b6e23c4541e50a5fcf992dd2323ff4 Mon Sep 17 00:00:00 2001
+From: TheVIperShow <thevipershowita@gmail.com>
+Date: Sun, 29 Mar 2020 15:32:30 +0200
+Subject: [PATCH] Increased TPS amount and added graphical output for tps
+ command
+
+
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index b9973406..d63ffba7 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -1,6 +1,7 @@
+ package org.bukkit;
+ 
+ import com.google.common.collect.ImmutableList;
++
+ import java.awt.image.BufferedImage;
+ import java.io.File;
+ import java.io.Serializable;
+@@ -13,6 +14,7 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
++
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -60,7 +62,8 @@ public final class Bukkit {
+     /**
+      * Static class cannot be initialized.
+      */
+-    private Bukkit() {}
++    private Bukkit() {
++    }
+ 
+     /**
+      * Gets the current {@link Server} singleton
+@@ -136,7 +139,7 @@ public final class Bukkit {
+      * affect the collection are fully supported. The effects following
+      * (non-exhaustive) {@link Entity#teleport(Location) teleportation},
+      * {@link Player#setHealth(double) death}, and {@link Player#kickPlayer(
+-     * String) kicking} are undefined. Any use of this collection from
++     *String) kicking} are undefined. Any use of this collection from
+      * asynchronous threads is unsafe.
+      * <p>
+      * For safe consequential iteration or mimicking the old array behavior,
+@@ -182,7 +185,7 @@ public final class Bukkit {
+      * specified.
+      *
+      * @return the IP string that this server is bound to, otherwise empty
+-     *     string
++     * string
+      */
+     @NotNull
+     public static String getIp() {
+@@ -275,6 +278,7 @@ public final class Bukkit {
+     }
+ 
+     // Paper start
++
+     /**
+      * Sends the component to all online players.
+      *
+@@ -468,6 +472,7 @@ public final class Bukkit {
+     }
+ 
+     // Paper start
++
+     /**
+      * Gets the unique ID of the player currently known as the specified player name
+      * In Offline Mode, will return an Offline UUID
+@@ -551,7 +556,7 @@ public final class Bukkit {
+      * Unloads the given world.
+      *
+      * @param world the world to unload
+-     * @param save whether to save the chunks before unloading
++     * @param save  whether to save the chunks before unloading
+      * @return true if successful, false otherwise
+      */
+     public static boolean unloadWorld(@NotNull World world, boolean save) {
+@@ -611,13 +616,12 @@ public final class Bukkit {
+      * This method uses implementation default values for radius and
+      * findUnexplored (usually 100, true).
+      *
+-     * @param world the world the map will belong to
+-     * @param location the origin location to find the nearest structure
++     * @param world         the world the map will belong to
++     * @param location      the origin location to find the nearest structure
+      * @param structureType the type of structure to find
+      * @return a newly created item stack
+-     *
+      * @see World#locateNearestStructure(org.bukkit.Location,
+-     *      org.bukkit.StructureType, int, boolean)
++     * org.bukkit.StructureType, int, boolean)
+      */
+     @NotNull
+     public static ItemStack createExplorerMap(@NotNull World world, @NotNull Location location, @NotNull StructureType structureType) {
+@@ -631,16 +635,15 @@ public final class Bukkit {
+      * This method uses implementation default values for radius and
+      * findUnexplored (usually 100, true).
+      *
+-     * @param world the world the map will belong to
+-     * @param location the origin location to find the nearest structure
+-     * @param structureType the type of structure to find
+-     * @param radius radius to search, see World#locateNearestStructure for more
+-     *               information
++     * @param world          the world the map will belong to
++     * @param location       the origin location to find the nearest structure
++     * @param structureType  the type of structure to find
++     * @param radius         radius to search, see World#locateNearestStructure for more
++     *                       information
+      * @param findUnexplored whether to find unexplored structures
+      * @return the newly created item stack
+-     *
+      * @see World#locateNearestStructure(org.bukkit.Location,
+-     *      org.bukkit.StructureType, int, boolean)
++     * org.bukkit.StructureType, int, boolean)
+      */
+     @NotNull
+     public static ItemStack createExplorerMap(@NotNull World world, @NotNull Location location, @NotNull StructureType structureType, int radius, boolean findUnexplored) {
+@@ -693,12 +696,12 @@ public final class Bukkit {
+     /**
+      * Dispatches a command on this server, and executes it if found.
+      *
+-     * @param sender the apparent sender of the command
++     * @param sender      the apparent sender of the command
+      * @param commandLine the command + arguments. Example: <code>test abc
+-     *     123</code>
++     *                    123</code>
+      * @return returns false if no target is found
+      * @throws CommandException thrown when the executor for the given command
+-     *     fails with an unhandled exception
++     *                          fails with an unhandled exception
+      */
+     public static boolean dispatchCommand(@NotNull CommandSender sender, @NotNull String commandLine) throws CommandException {
+         return server.dispatchCommand(sender, commandLine);
+@@ -709,7 +712,7 @@ public final class Bukkit {
+      *
+      * @param recipe the recipe to add
+      * @return true if the recipe was added, false if it wasn't for some
+-     *     reason
++     * reason
+      */
+     @Contract("null -> false")
+     public static boolean addRecipe(@Nullable Recipe recipe) {
+@@ -832,9 +835,9 @@ public final class Bukkit {
+      * Broadcasts the specified message to every user with the given
+      * permission name.
+      *
+-     * @param message message to broadcast
++     * @param message    message to broadcast
+      * @param permission the required permission {@link Permissible
+-     *     permissibles} must have to receive the broadcast
++     *                   permissibles} must have to receive the broadcast
+      * @return number of message recipients
+      */
+     public static int broadcast(@NotNull String message, @NotNull String permission) {
+@@ -851,11 +854,11 @@ public final class Bukkit {
+      * This will return an object even if the player does not exist. To this
+      * method, all players will exist.
+      *
+-     * @deprecated Persistent storage of users should be by UUID as names are no longer
+-     *             unique past a single session.
+      * @param name the name the player to retrieve
+      * @return an offline player
+      * @see #getOfflinePlayer(java.util.UUID)
++     * @deprecated Persistent storage of users should be by UUID as names are no longer
++     * unique past a single session.
+      */
+     @Deprecated
+     @NotNull
+@@ -1024,11 +1027,10 @@ public final class Bukkit {
+      * {@link Player#openEnchanting(Location, boolean)} instead.
+      *
+      * @param owner the holder of the inventory, or null to indicate no holder
+-     * @param type the type of inventory to create
++     * @param type  the type of inventory to create
+      * @return a new inventory
+      * @throws IllegalArgumentException if the {@link InventoryType} cannot be
+-     * viewed.
+-     *
++     *                                  viewed.
+      * @see InventoryType#isCreatable()
+      */
+     @NotNull
+@@ -1052,12 +1054,11 @@ public final class Bukkit {
+      * {@link Player#openEnchanting(Location, boolean)} instead.
+      *
+      * @param owner The holder of the inventory; can be null if there's no holder.
+-     * @param type The type of inventory to create.
++     * @param type  The type of inventory to create.
+      * @param title The title of the inventory, to be displayed when it is viewed.
+      * @return The new inventory.
+      * @throws IllegalArgumentException if the {@link InventoryType} cannot be
+-     * viewed.
+-     *
++     *                                  viewed.
+      * @see InventoryType#isCreatable()
+      */
+     @NotNull
+@@ -1070,7 +1071,7 @@ public final class Bukkit {
+      * specified size.
+      *
+      * @param owner the holder of the inventory, or null to indicate no holder
+-     * @param size a multiple of 9 as the size of inventory to create
++     * @param size  a multiple of 9 as the size of inventory to create
+      * @return a new inventory
+      * @throws IllegalArgumentException if the size is not a multiple of 9
+      */
+@@ -1084,9 +1085,9 @@ public final class Bukkit {
+      * specified size and title.
+      *
+      * @param owner the holder of the inventory, or null to indicate no holder
+-     * @param size a multiple of 9 as the size of inventory to create
++     * @param size  a multiple of 9 as the size of inventory to create
+      * @param title the title of the inventory, displayed when inventory is
+-     *     viewed
++     *              viewed
+      * @return a new inventory
+      * @throws IllegalArgumentException if the size is not a multiple of 9
+      */
+@@ -1099,7 +1100,7 @@ public final class Bukkit {
+      * Creates an empty merchant.
+      *
+      * @param title the title of the corresponding merchant inventory, displayed
+-     * when the merchant inventory is viewed
++     *              when the merchant inventory is viewed
+      * @return a new merchant
+      */
+     @NotNull
+@@ -1157,7 +1158,7 @@ public final class Bukkit {
+      * preclude</b> the same assumption.
+      *
+      * @return true if the current thread matches the expected primary thread,
+-     *     false otherwise
++     * false otherwise
+      */
+     public static boolean isPrimaryThread() {
+         return server.isPrimaryThread();
+@@ -1220,8 +1221,8 @@ public final class Bukkit {
+      * Gets an instance of the server's default server-icon.
+      *
+      * @return the default server-icon; null values may be used by the
+-     *     implementation to indicate no defined icon, but this behavior is
+-     *     not guaranteed
++     * implementation to indicate no defined icon, but this behavior is
++     * not guaranteed
+      */
+     @Nullable
+     public static CachedServerIcon getServerIcon() {
+@@ -1236,11 +1237,11 @@ public final class Bukkit {
+      * guaranteed to throw an implementation-defined {@link Exception}.
+      *
+      * @param file the file to load the from
+-     * @throws IllegalArgumentException if image is null
+-     * @throws Exception if the image does not meet current server server-icon
+-     *     specifications
+      * @return a cached server-icon that can be used for a {@link
+-     *     ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * @throws IllegalArgumentException if image is null
++     * @throws Exception                if the image does not meet current server server-icon
++     *                                  specifications
+      */
+     @NotNull
+     public static CachedServerIcon loadServerIcon(@NotNull File file) throws IllegalArgumentException, Exception {
+@@ -1254,11 +1255,11 @@ public final class Bukkit {
+      * guaranteed to throw an implementation-defined {@link Exception}.
+      *
+      * @param image the image to use
+-     * @throws IllegalArgumentException if image is null
+-     * @throws Exception if the image does not meet current server
+-     *     server-icon specifications
+      * @return a cached server-icon that can be used for a {@link
+-     *     ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * @throws IllegalArgumentException if image is null
++     * @throws Exception                if the image does not meet current server
++     *                                  server-icon specifications
+      */
+     @NotNull
+     public static CachedServerIcon loadServerIcon(@NotNull BufferedImage image) throws IllegalArgumentException, Exception {
+@@ -1288,12 +1289,11 @@ public final class Bukkit {
+ 
+     /**
+      * Create a ChunkData for use in a generator.
+-     *
++     * <p>
+      * See {@link ChunkGenerator#generateChunkData(org.bukkit.World, java.util.Random, int, int, org.bukkit.generator.ChunkGenerator.BiomeGrid)}
+      *
+      * @param world the world to create the ChunkData for
+      * @return a new ChunkData for the world
+-     *
+      */
+     @NotNull
+     public static ChunkGenerator.ChunkData createChunkData(@NotNull World world) {
+@@ -1322,7 +1322,7 @@ public final class Bukkit {
+      * This instance is added to the persistent storage of the server and will
+      * be editable by commands and restored after restart.
+      *
+-     * @param key the key of the boss bar that is used to access the boss bar
++     * @param key   the key of the boss bar that is used to access the boss bar
+      * @param title the title of the boss bar
+      * @param color the color of the boss bar
+      * @param style the style of the boss bar
+@@ -1343,7 +1343,7 @@ public final class Bukkit {
+      *     {@link #createBossBar(String, BarColor, BarStyle, BarFlag...)}
+      *   </li>
+      * </ul>
+-     *
++     * <p>
+      * e.g. bossbars created using the bossbar command
+      *
+      * @return a bossbar iterator
+@@ -1362,7 +1362,7 @@ public final class Bukkit {
+      *     {@link #createBossBar(String, BarColor, BarStyle, BarFlag...)}
+      *   </li>
+      * </ul>
+-     *
++     * <p>
+      * e.g. bossbars created using the bossbar command
+      *
+      * @param key unique bossbar key
+@@ -1382,7 +1382,7 @@ public final class Bukkit {
+      *     {@link #createBossBar(String, BarColor, BarStyle, BarFlag...)}
+      *   </li>
+      * </ul>
+-     *
++     * <p>
+      * e.g. bossbars created using the bossbar command
+      *
+      * @param key unique bossbar key
+@@ -1404,14 +1404,32 @@ public final class Bukkit {
+     }
+ 
+     // Paper start
++
+     /**
+      * Gets the current server TPS
++     *
+      * @return current server TPS (1m, 5m, 15m in Paper-Server)
+      */
+     @NotNull
+     public static double[] getTPS() {
+-        return server.getTPS();
++        return getTPS(0, 4, 14); // To provide compatibility with the older TPS array which only had 3 values.
++    }
++    // Paper end
++
++    // Paper start
++
++    /**
++     * Returns the current server TPS from the specified time interval
++     * the server only keeps track of the last 30 minutes
++     *
++     * @param indexes any integer from 0 to 29
++     * @return current server TPS.
++     */
++    @NotNull
++    public static double[] getTPS(@NotNull int... indexes) {
++        return server.getTPS(indexes);
+     }
++
+     // Paper end
+ 
+     /**
+@@ -1480,7 +1498,7 @@ public final class Bukkit {
+      * provided in data.
+      *
+      * @param material the material
+-     * @param data data string
++     * @param data     data string
+      * @return new data instance
+      * @throws IllegalArgumentException if the specified data is not valid
+      */
+@@ -1502,10 +1520,10 @@ public final class Bukkit {
+      * Server implementations are allowed to handle only the registries
+      * indicated in {@link Tag}.
+      *
+-     * @param <T> type of the tag
++     * @param <T>      type of the tag
+      * @param registry the tag registry to look at
+-     * @param tag the name of the tag
+-     * @param clazz the class of the tag entries
++     * @param tag      the name of the tag
++     * @param clazz    the class of the tag entries
+      * @return the tag or null
+      */
+     @UndefinedNullability // Paper
+@@ -1521,9 +1539,9 @@ public final class Bukkit {
+      * <br>
+      * No guarantees are made about the mutability of the returned iterator.
+      *
+-     * @param <T> type of the tag
++     * @param <T>      type of the tag
+      * @param registry the tag registry to look at
+-     * @param clazz the class of the tag entries
++     * @param clazz    the class of the tag entries
+      * @return all defined tags
+      */
+     @NotNull
+@@ -1555,12 +1573,12 @@ public final class Bukkit {
+      * '@' selectors, but this method should not check such permissions from the
+      * sender.
+      *
+-     * @param sender the sender to execute as, must be provided
++     * @param sender   the sender to execute as, must be provided
+      * @param selector the selection string
+      * @return a list of the selected entities. The list will not be null, but
+      * no further guarantees are made.
+      * @throws IllegalArgumentException if the selector is malformed in any way
+-     * or a parameter is null
++     *                                  or a parameter is null
+      */
+     @NotNull
+     public static List<Entity> selectEntities(@NotNull CommandSender sender, @NotNull String selector) throws IllegalArgumentException {
+@@ -1568,8 +1586,8 @@ public final class Bukkit {
+     }
+ 
+     /**
+-     * @see UnsafeValues
+      * @return the unsafe values instance
++     * @see UnsafeValues
+      */
+     @Deprecated
+     @NotNull
+@@ -1579,6 +1597,7 @@ public final class Bukkit {
+ 
+ 
+     // Paper start
++
+     /**
+      * Gets the active {@link org.bukkit.command.CommandMap}
+      *
+@@ -1616,7 +1635,6 @@ public final class Bukkit {
+     }
+ 
+     /**
+-     *
+      * @return the default no permission message used on the server
+      */
+     @NotNull
+@@ -1626,6 +1644,7 @@ public final class Bukkit {
+ 
+     /**
+      * Creates a PlayerProfile for the specified uuid, with name as null
++     *
+      * @param uuid UUID to create profile for
+      * @return A PlayerProfile object
+      */
+@@ -1636,6 +1655,7 @@ public final class Bukkit {
+ 
+     /**
+      * Creates a PlayerProfile for the specified name, with UUID as null
++     *
+      * @param name Name to create profile for
+      * @return A PlayerProfile object
+      */
+@@ -1646,7 +1666,7 @@ public final class Bukkit {
+ 
+     /**
+      * Creates a PlayerProfile for the specified name/uuid
+-     *
++     * <p>
+      * Both UUID and Name can not be null at same time. One must be supplied.
+      *
+      * @param uuid UUID to create profile for
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index 80f9abdc..85812457 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -1,6 +1,7 @@
+ package org.bukkit;
+ 
+ import com.google.common.collect.ImmutableList;
++
+ import java.awt.image.BufferedImage;
+ import java.io.File;
+ import java.io.Serializable;
+@@ -13,6 +14,7 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
++
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -115,7 +117,7 @@ public interface Server extends PluginMessageRecipient {
+      * affect the collection are fully supported. The effects following
+      * (non-exhaustive) {@link Entity#teleport(Location) teleportation},
+      * {@link Player#setHealth(double) death}, and {@link Player#kickPlayer(
+-     * String) kicking} are undefined. Any use of this collection from
++     *String) kicking} are undefined. Any use of this collection from
+      * asynchronous threads is unsafe.
+      * <p>
+      * For safe consequential iteration or mimicking the old array behavior,
+@@ -153,7 +155,7 @@ public interface Server extends PluginMessageRecipient {
+      * specified.
+      *
+      * @return the IP string that this server is bound to, otherwise empty
+-     *     string
++     * string
+      */
+     @NotNull
+     public String getIp();
+@@ -226,6 +228,7 @@ public interface Server extends PluginMessageRecipient {
+     public int broadcastMessage(@NotNull String message);
+ 
+     // Paper start
++
+     /**
+      * Sends the component to all online players.
+      *
+@@ -397,6 +400,7 @@ public interface Server extends PluginMessageRecipient {
+     public Player getPlayer(@NotNull UUID id);
+ 
+     // Paper start
++
+     /**
+      * Gets the unique ID of the player currently known as the specified player name
+      * In Offline Mode, will return an Offline UUID
+@@ -466,7 +470,7 @@ public interface Server extends PluginMessageRecipient {
+      * Unloads the given world.
+      *
+      * @param world the world to unload
+-     * @param save whether to save the chunks before unloading
++     * @param save  whether to save the chunks before unloading
+      * @return true if successful, false otherwise
+      */
+     public boolean unloadWorld(@NotNull World world, boolean save);
+@@ -516,13 +520,12 @@ public interface Server extends PluginMessageRecipient {
+      * This method uses implementation default values for radius and
+      * findUnexplored (usually 100, true).
+      *
+-     * @param world the world the map will belong to
+-     * @param location the origin location to find the nearest structure
++     * @param world         the world the map will belong to
++     * @param location      the origin location to find the nearest structure
+      * @param structureType the type of structure to find
+      * @return a newly created item stack
+-     *
+      * @see World#locateNearestStructure(org.bukkit.Location,
+-     *      org.bukkit.StructureType, int, boolean)
++     * org.bukkit.StructureType, int, boolean)
+      */
+     @NotNull
+     public ItemStack createExplorerMap(@NotNull World world, @NotNull Location location, @NotNull StructureType structureType);
+@@ -534,16 +537,15 @@ public interface Server extends PluginMessageRecipient {
+      * This method uses implementation default values for radius and
+      * findUnexplored (usually 100, true).
+      *
+-     * @param world the world the map will belong to
+-     * @param location the origin location to find the nearest structure
+-     * @param structureType the type of structure to find
+-     * @param radius radius to search, see World#locateNearestStructure for more
+-     *               information
++     * @param world          the world the map will belong to
++     * @param location       the origin location to find the nearest structure
++     * @param structureType  the type of structure to find
++     * @param radius         radius to search, see World#locateNearestStructure for more
++     *                       information
+      * @param findUnexplored whether to find unexplored structures
+      * @return the newly created item stack
+-     *
+      * @see World#locateNearestStructure(org.bukkit.Location,
+-     *      org.bukkit.StructureType, int, boolean)
++     * org.bukkit.StructureType, int, boolean)
+      */
+     @NotNull
+     public ItemStack createExplorerMap(@NotNull World world, @NotNull Location location, @NotNull StructureType structureType, int radius, boolean findUnexplored);
+@@ -584,12 +586,12 @@ public interface Server extends PluginMessageRecipient {
+     /**
+      * Dispatches a command on this server, and executes it if found.
+      *
+-     * @param sender the apparent sender of the command
++     * @param sender      the apparent sender of the command
+      * @param commandLine the command + arguments. Example: <code>test abc
+-     *     123</code>
++     *                    123</code>
+      * @return returns false if no target is found
+      * @throws CommandException thrown when the executor for the given command
+-     *     fails with an unhandled exception
++     *                          fails with an unhandled exception
+      */
+     public boolean dispatchCommand(@NotNull CommandSender sender, @NotNull String commandLine) throws CommandException;
+ 
+@@ -598,7 +600,7 @@ public interface Server extends PluginMessageRecipient {
+      *
+      * @param recipe the recipe to add
+      * @return true if the recipe was added, false if it wasn't for some
+-     *     reason
++     * reason
+      */
+     @Contract("null -> false")
+     public boolean addRecipe(@Nullable Recipe recipe);
+@@ -695,9 +697,9 @@ public interface Server extends PluginMessageRecipient {
+      * Broadcasts the specified message to every user with the given
+      * permission name.
+      *
+-     * @param message message to broadcast
++     * @param message    message to broadcast
+      * @param permission the required permission {@link Permissible
+-     *     permissibles} must have to receive the broadcast
++     *                   permissibles} must have to receive the broadcast
+      * @return number of message recipients
+      */
+     public int broadcast(@NotNull String message, @NotNull String permission);
+@@ -712,11 +714,11 @@ public interface Server extends PluginMessageRecipient {
+      * This will return an object even if the player does not exist. To this
+      * method, all players will exist.
+      *
+-     * @deprecated Persistent storage of users should be by UUID as names are no longer
+-     *             unique past a single session.
+      * @param name the name the player to retrieve
+      * @return an offline player
+      * @see #getOfflinePlayer(java.util.UUID)
++     * @deprecated Persistent storage of users should be by UUID as names are no longer
++     * unique past a single session.
+      */
+     @Deprecated
+     @NotNull
+@@ -855,11 +857,10 @@ public interface Server extends PluginMessageRecipient {
+      * {@link Player#openEnchanting(Location, boolean)} instead.
+      *
+      * @param owner the holder of the inventory, or null to indicate no holder
+-     * @param type the type of inventory to create
++     * @param type  the type of inventory to create
+      * @return a new inventory
+      * @throws IllegalArgumentException if the {@link InventoryType} cannot be
+-     * viewed.
+-     *
++     *                                  viewed.
+      * @see InventoryType#isCreatable()
+      */
+     @NotNull
+@@ -881,12 +882,11 @@ public interface Server extends PluginMessageRecipient {
+      * {@link Player#openEnchanting(Location, boolean)} instead.
+      *
+      * @param owner The holder of the inventory; can be null if there's no holder.
+-     * @param type The type of inventory to create.
++     * @param type  The type of inventory to create.
+      * @param title The title of the inventory, to be displayed when it is viewed.
+      * @return The new inventory.
+      * @throws IllegalArgumentException if the {@link InventoryType} cannot be
+-     * viewed.
+-     *
++     *                                  viewed.
+      * @see InventoryType#isCreatable()
+      */
+     @NotNull
+@@ -897,7 +897,7 @@ public interface Server extends PluginMessageRecipient {
+      * specified size.
+      *
+      * @param owner the holder of the inventory, or null to indicate no holder
+-     * @param size a multiple of 9 as the size of inventory to create
++     * @param size  a multiple of 9 as the size of inventory to create
+      * @return a new inventory
+      * @throws IllegalArgumentException if the size is not a multiple of 9
+      */
+@@ -909,9 +909,9 @@ public interface Server extends PluginMessageRecipient {
+      * specified size and title.
+      *
+      * @param owner the holder of the inventory, or null to indicate no holder
+-     * @param size a multiple of 9 as the size of inventory to create
++     * @param size  a multiple of 9 as the size of inventory to create
+      * @param title the title of the inventory, displayed when inventory is
+-     *     viewed
++     *              viewed
+      * @return a new inventory
+      * @throws IllegalArgumentException if the size is not a multiple of 9
+      */
+@@ -922,7 +922,7 @@ public interface Server extends PluginMessageRecipient {
+      * Creates an empty merchant.
+      *
+      * @param title the title of the corresponding merchant inventory, displayed
+-     * when the merchant inventory is viewed
++     *              when the merchant inventory is viewed
+      * @return a new merchant
+      */
+     @NotNull
+@@ -970,7 +970,7 @@ public interface Server extends PluginMessageRecipient {
+      * preclude</b> the same assumption.
+      *
+      * @return true if the current thread matches the expected primary thread,
+-     *     false otherwise
++     * false otherwise
+      */
+     boolean isPrimaryThread();
+ 
+@@ -1021,8 +1021,8 @@ public interface Server extends PluginMessageRecipient {
+      * Gets an instance of the server's default server-icon.
+      *
+      * @return the default server-icon; null values may be used by the
+-     *     implementation to indicate no defined icon, but this behavior is
+-     *     not guaranteed
++     * implementation to indicate no defined icon, but this behavior is
++     * not guaranteed
+      */
+     @Nullable
+     CachedServerIcon getServerIcon();
+@@ -1035,11 +1035,11 @@ public interface Server extends PluginMessageRecipient {
+      * guaranteed to throw an implementation-defined {@link Exception}.
+      *
+      * @param file the file to load the from
+-     * @throws IllegalArgumentException if image is null
+-     * @throws Exception if the image does not meet current server server-icon
+-     *     specifications
+      * @return a cached server-icon that can be used for a {@link
+-     *     ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * @throws IllegalArgumentException if image is null
++     * @throws Exception                if the image does not meet current server server-icon
++     *                                  specifications
+      */
+     @NotNull
+     CachedServerIcon loadServerIcon(@NotNull File file) throws IllegalArgumentException, Exception;
+@@ -1051,11 +1051,11 @@ public interface Server extends PluginMessageRecipient {
+      * guaranteed to throw an implementation-defined {@link Exception}.
+      *
+      * @param image the image to use
+-     * @throws IllegalArgumentException if image is null
+-     * @throws Exception if the image does not meet current server
+-     *     server-icon specifications
+      * @return a cached server-icon that can be used for a {@link
+-     *     ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * ServerListPingEvent#setServerIcon(CachedServerIcon)}
++     * @throws IllegalArgumentException if image is null
++     * @throws Exception                if the image does not meet current server
++     *                                  server-icon specifications
+      */
+     @NotNull
+     CachedServerIcon loadServerIcon(@NotNull BufferedImage image) throws IllegalArgumentException, Exception;
+@@ -1079,12 +1079,11 @@ public interface Server extends PluginMessageRecipient {
+ 
+     /**
+      * Create a ChunkData for use in a generator.
+-     *
++     * <p>
+      * See {@link ChunkGenerator#generateChunkData(org.bukkit.World, java.util.Random, int, int, org.bukkit.generator.ChunkGenerator.BiomeGrid)}
+      *
+      * @param world the world to create the ChunkData for
+      * @return a new ChunkData for the world
+-     *
+      */
+     @NotNull
+     public ChunkGenerator.ChunkData createChunkData(@NotNull World world);
+@@ -1109,7 +1108,7 @@ public interface Server extends PluginMessageRecipient {
+      * This instance is added to the persistent storage of the server and will
+      * be editable by commands and restored after restart.
+      *
+-     * @param key the key of the boss bar that is used to access the boss bar
++     * @param key   the key of the boss bar that is used to access the boss bar
+      * @param title the title of the boss bar
+      * @param color the color of the boss bar
+      * @param style the style of the boss bar
+@@ -1128,7 +1127,7 @@ public interface Server extends PluginMessageRecipient {
+      *     {@link #createBossBar(String, BarColor, BarStyle, BarFlag...)}
+      *   </li>
+      * </ul>
+-     *
++     * <p>
+      * e.g. bossbars created using the bossbar command
+      *
+      * @return a bossbar iterator
+@@ -1145,7 +1144,7 @@ public interface Server extends PluginMessageRecipient {
+      *     {@link #createBossBar(String, BarColor, BarStyle, BarFlag...)}
+      *   </li>
+      * </ul>
+-     *
++     * <p>
+      * e.g. bossbars created using the bossbar command
+      *
+      * @param key unique bossbar key
+@@ -1163,7 +1162,7 @@ public interface Server extends PluginMessageRecipient {
+      *     {@link #createBossBar(String, BarColor, BarStyle, BarFlag...)}
+      *   </li>
+      * </ul>
+-     *
++     * <p>
+      * e.g. bossbars created using the bossbar command
+      *
+      * @param key unique bossbar key
+@@ -1181,6 +1180,7 @@ public interface Server extends PluginMessageRecipient {
+     Entity getEntity(@NotNull UUID uuid);
+ 
+     // Paper start
++
+     /**
+      * Gets the current server TPS
+      *
+@@ -1191,6 +1191,23 @@ public interface Server extends PluginMessageRecipient {
+     // Paper end
+ 
+     // Paper start
++
++    /**
++     * Provide the average tps at from the current indexes
++     * the index represent the minutes, for example:
++     * 2,5,10 , will provide the the TPS averages from
++     * two , five and ten minutes ago.
++     * this method only saves 30 minutes so the biggest that
++     * can be used is 29
++     *
++     * @param indexes any value from 0 to 29
++     * @return a double array that represents the TPS averages at the specified indexes.
++     */
++    @NotNull
++    public double[] getTPS(@NotNull int... indexes);
++
++    // Paper start
++
+     /**
+      * Gets the active {@link org.bukkit.command.CommandMap}
+      *
+@@ -1258,7 +1275,7 @@ public interface Server extends PluginMessageRecipient {
+      * contain the material.
+      *
+      * @param material the material
+-     * @param data data string
++     * @param data     data string
+      * @return new data instance
+      * @throws IllegalArgumentException if the specified data is not valid
+      */
+@@ -1278,10 +1295,10 @@ public interface Server extends PluginMessageRecipient {
+      * Server implementations are allowed to handle only the registries
+      * indicated in {@link Tag}.
+      *
+-     * @param <T> type of the tag
++     * @param <T>      type of the tag
+      * @param registry the tag registry to look at
+-     * @param tag the name of the tag
+-     * @param clazz the class of the tag entries
++     * @param tag      the name of the tag
++     * @param clazz    the class of the tag entries
+      * @return the tag or null
+      */
+     @UndefinedNullability
+@@ -1295,13 +1312,12 @@ public interface Server extends PluginMessageRecipient {
+      * <br>
+      * No guarantees are made about the mutability of the returned iterator.
+      *
+-     * @param <T> type of the tag
++     * @param <T>      type of the tag
+      * @param registry the tag registry to look at
+-     * @param clazz the class of the tag entries
++     * @param clazz    the class of the tag entries
+      * @return all defined tags
+      */
+-    @NotNull
+-    <T extends Keyed> Iterable<Tag<T>> getTags(@NotNull String registry, @NotNull Class<T> clazz);
++    @NotNull <T extends Keyed> Iterable<Tag<T>> getTags(@NotNull String registry, @NotNull Class<T> clazz);
+ 
+     /**
+      * Gets the specified {@link LootTable}.
+@@ -1325,19 +1341,19 @@ public interface Server extends PluginMessageRecipient {
+      * '@' selectors, but this method should not check such permissions from the
+      * sender.
+      *
+-     * @param sender the sender to execute as, must be provided
++     * @param sender   the sender to execute as, must be provided
+      * @param selector the selection string
+      * @return a list of the selected entities. The list will not be null, but
+      * no further guarantees are made.
+      * @throws IllegalArgumentException if the selector is malformed in any way
+-     * or a parameter is null
++     *                                  or a parameter is null
+      */
+     @NotNull
+     List<Entity> selectEntities(@NotNull CommandSender sender, @NotNull String selector) throws IllegalArgumentException;
+ 
+     /**
+-     * @see UnsafeValues
+      * @return the unsafe values instance
++     * @see UnsafeValues
+      */
+     @Deprecated
+     @NotNull
+@@ -1353,20 +1369,17 @@ public interface Server extends PluginMessageRecipient {
+ 
+         // Paper start
+         @NotNull
+-        public org.bukkit.configuration.file.YamlConfiguration getBukkitConfig()
+-        {
+-            throw new UnsupportedOperationException( "Not supported yet." );
++        public org.bukkit.configuration.file.YamlConfiguration getBukkitConfig() {
++            throw new UnsupportedOperationException("Not supported yet.");
+         }
+ 
+         @NotNull
+-        public org.bukkit.configuration.file.YamlConfiguration getSpigotConfig()
+-        {
++        public org.bukkit.configuration.file.YamlConfiguration getSpigotConfig() {
+             throw new UnsupportedOperationException("Not supported yet.");
+         }
+ 
+         @NotNull
+-        public org.bukkit.configuration.file.YamlConfiguration getPaperConfig()
+-        {
++        public org.bukkit.configuration.file.YamlConfiguration getPaperConfig() {
+             throw new UnsupportedOperationException("Not supported yet.");
+         }
+         // Paper end
+@@ -1406,6 +1419,7 @@ public interface Server extends PluginMessageRecipient {
+     boolean reloadCommandAliases(); // Paper
+ 
+     // Paper start - allow preventing player name suggestions by default
++
+     /**
+      * Checks if player names should be suggested when a command returns {@code null} as
+      * their tab completion result.
+@@ -1415,7 +1429,6 @@ public interface Server extends PluginMessageRecipient {
+     boolean suggestPlayerNamesWhenNullTabCompletions();
+ 
+     /**
+-     *
+      * @return the default no permission message used on the server
+      */
+     @NotNull
+@@ -1423,6 +1436,7 @@ public interface Server extends PluginMessageRecipient {
+ 
+     /**
+      * Creates a PlayerProfile for the specified uuid, with name as null
++     *
+      * @param uuid UUID to create profile for
+      * @return A PlayerProfile object
+      */
+@@ -1431,6 +1445,7 @@ public interface Server extends PluginMessageRecipient {
+ 
+     /**
+      * Creates a PlayerProfile for the specified name, with UUID as null
++     *
+      * @param name Name to create profile for
+      * @return A PlayerProfile object
+      */
+@@ -1439,7 +1454,7 @@ public interface Server extends PluginMessageRecipient {
+ 
+     /**
+      * Creates a PlayerProfile for the specified name/uuid
+-     *
++     * <p>
+      * Both UUID and Name can not be null at same time. One must be supplied.
+      *
+      * @param uuid UUID to create profile for
+diff --git a/src/main/java/org/bukkit/command/CommandSender.java b/src/main/java/org/bukkit/command/CommandSender.java
+index d3b3a8bf..a06b0b86 100644
+--- a/src/main/java/org/bukkit/command/CommandSender.java
++++ b/src/main/java/org/bukkit/command/CommandSender.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.command;
+ 
++import org.bukkit.ChatColor;
+ import org.bukkit.Server;
+ import org.bukkit.permissions.Permissible;
+ import org.jetbrains.annotations.NotNull;
+@@ -63,6 +64,7 @@ public interface CommandSender extends Permissible {
+     // Spigot end
+ 
+     // Paper start
++
+     /**
+      * Sends the component to the sender
+      *
+@@ -87,4 +89,37 @@ public interface CommandSender extends Permissible {
+         this.sendMessage(new net.md_5.bungee.api.chat.TextComponent(components).toLegacyText());
+     }
+     // Paper end
++
++    // Paper start
++    // Adding method for colored text
++
++    /**
++     * This method provides a built-in text formatter,
++     * the '&' character will act as a color code placeholder.
++     * You are able to use both color codes and text formatting with it.
++     *
++     * @param message The message that will be sent to the player.
++     *                It will be sent as normal text if it doesn't contain
++     *                any valid formatting.
++     */
++    default void sendColoredMessage(@NotNull String message) {
++        this.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
++    }
++
++    /**
++     * This method provides a built-in text formatter,
++     * the '&' character will act as a color code placeholder.
++     * You are able to use both color codes and text formatting with it.
++     *
++     * @param messages The messages that will be sent to the player.
++     *                 They will be sent as normal text if they don't contain
++     *                 any valid formatting.
++     */
++    default void sendColoredMessage(@NotNull String... messages) {
++        for (String message : messages) {
++            sendColoredMessage(message);
++        }
++    }
++
++    // Paper end
+ }
+-- 
+2.21.1 (Apple Git-122.3)
+
