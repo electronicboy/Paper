@@ -5,7 +5,7 @@ Subject: [PATCH] Add slot sanity checks in container clicks
 
 
 diff --git a/src/main/java/net/minecraft/world/inventory/AbstractContainerMenu.java b/src/main/java/net/minecraft/world/inventory/AbstractContainerMenu.java
-index 706b354ac9a1a6a4a1e61b2a109180d1dd22bbbd..71b7a091e56dd68da280d13318a393170967b042 100644
+index 706b354ac9a1a6a4a1e61b2a109180d1dd22bbbd..4523afb67bcb313b21e33a9a87b93588e5cb2939 100644
 --- a/src/main/java/net/minecraft/world/inventory/AbstractContainerMenu.java
 +++ b/src/main/java/net/minecraft/world/inventory/AbstractContainerMenu.java
 @@ -423,6 +423,7 @@ public abstract class AbstractContainerMenu {
@@ -20,7 +20,7 @@ index 706b354ac9a1a6a4a1e61b2a109180d1dd22bbbd..71b7a091e56dd68da280d13318a39317
                  int j2;
  
                  if (actionType == ClickType.SWAP) {
-+                    if (slotIndex < 0) return; // Paper
++                    if (slotIndex < 0 || button < 0) return; // Paper
                      slot2 = (Slot) this.slots.get(slotIndex);
                      itemstack1 = playerinventory.getItem(button);
                      itemstack = slot2.getItem();
