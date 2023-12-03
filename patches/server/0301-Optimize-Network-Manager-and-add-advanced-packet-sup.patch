@@ -364,7 +364,7 @@ index cc658a61065d5c0021a4b88fa58b40211b94f8ec..da11266a0a23f446196e6facf2c358cf
          return false;
      }
 diff --git a/src/main/java/net/minecraft/server/network/ServerConnectionListener.java b/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
-index d870fbec236a3660f12e0f45cf9431067b18468b..caeead6c6082855f1651ee28263cc9f60423ca0c 100644
+index d870fbec236a3660f12e0f45cf9431067b18468b..0adda20f9b7d03e26573e575e9ee1075ae446cb1 100644
 --- a/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
 +++ b/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
 @@ -63,10 +63,12 @@ public class ServerConnectionListener {
@@ -380,11 +380,16 @@ index d870fbec236a3660f12e0f45cf9431067b18468b..caeead6c6082855f1651ee28263cc9f6
          }
      }
      // Paper end
-@@ -103,6 +105,7 @@ public class ServerConnectionListener {
+@@ -103,9 +105,11 @@ public class ServerConnectionListener {
                          ;
                      }
  
-+                    if (!disableFlushConsolidation) channel.pipeline().addFirst(new io.netty.handler.flush.FlushConsolidationHandler()); // Paper - Optimize network
-                     ChannelPipeline channelpipeline = channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30)).addLast("legacy_query", new LegacyQueryHandler(ServerConnectionListener.this.getServer()));
+-                    ChannelPipeline channelpipeline = channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30)).addLast("legacy_query", new LegacyQueryHandler(ServerConnectionListener.this.getServer()));
++                    if (!disableFlushConsolidation) channel.pipeline().addFirst("flush-consolidation", new io.netty.handler.flush.FlushConsolidationHandler()); // Paper - Optimize network
++                    ChannelPipeline channelpipeline = channel.pipeline()/*.addLast("timeout", new ReadTimeoutHandler(30))*/.addLast("legacy_query", new LegacyQueryHandler(ServerConnectionListener.this.getServer()));
  
                      Connection.configureSerialization(channelpipeline, PacketFlow.SERVERBOUND, (BandwidthDebugMonitor) null);
++                    channelpipeline.addAfter("splitter", "timeout", new ReadTimeoutHandler(30)); // Paper - Optimize network
+                     int j = ServerConnectionListener.this.server.getRateLimitPacketsPerSecond();
+                     Connection object = j > 0 ? new RateKickingConnection(j) : new Connection(PacketFlow.SERVERBOUND); // CraftBukkit - decompile error
+ 

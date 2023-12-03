@@ -11,7 +11,7 @@ Tested-by: Mariell Hoversholm <proximyst@proximyst.com>
 Reviewed-by: Mariell Hoversholm <proximyst@proximyst.com>
 
 diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-index 3c751c98de1d5a9b41ebd832be0ae317d4ac9362..51c924f051c25cac8172b0ddab83f3b7a69adfe6 100644
+index 16a32e2baebe01d1f2d077500b775aeca7ec61aa..96de992ea9bc9182ea6a30a33e86d7970b70611b 100644
 --- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -219,6 +219,20 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
@@ -53,7 +53,7 @@ index 3c751c98de1d5a9b41ebd832be0ae317d4ac9362..51c924f051c25cac8172b0ddab83f3b7
              DedicatedServer.LOGGER.warn("**** FAILED TO BIND TO PORT!");
              DedicatedServer.LOGGER.warn("The exception was: {}", ioexception.toString());
 diff --git a/src/main/java/net/minecraft/server/network/ServerConnectionListener.java b/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
-index 6641fd04821240b1bbeff1bd8d996a8f2fff8385..5f625acf04ddb56e3596d086252f9bfccfdb95f2 100644
+index 167f5b5c251a12401d04c87ef6b1abc1d6614a69..2090c2fd52d5b977c9f5046479c4cace17ec2891 100644
 --- a/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
 +++ b/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
 @@ -78,7 +78,12 @@ public class ServerConnectionListener {
@@ -83,7 +83,7 @@ index 6641fd04821240b1bbeff1bd8d996a8f2fff8385..5f625acf04ddb56e3596d086252f9bfc
                  eventloopgroup = (EventLoopGroup) ServerConnectionListener.SERVER_EPOLL_EVENT_GROUP.get();
                  ServerConnectionListener.LOGGER.info("Using epoll channel type");
              } else {
-@@ -118,7 +129,7 @@ public class ServerConnectionListener {
+@@ -119,7 +130,7 @@ public class ServerConnectionListener {
                      ((Connection) object).setListenerForServerboundHandshake(new ServerHandshakePacketListenerImpl(ServerConnectionListener.this.server, (Connection) object));
                      io.papermc.paper.network.ChannelInitializeListenerHolder.callListeners(channel); // Paper
                  }

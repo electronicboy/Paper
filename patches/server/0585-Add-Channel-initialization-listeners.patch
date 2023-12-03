@@ -142,10 +142,10 @@ index 33a3c657bd390b9e8bc23af93c1107f5327181b2..332a37dbd3ffa05614ae97b90453fcc2
  
      }
 diff --git a/src/main/java/net/minecraft/server/network/ServerConnectionListener.java b/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
-index b2bfb3893200362ac35ae60982f203f86a1148ec..6641fd04821240b1bbeff1bd8d996a8f2fff8385 100644
+index 17f9e1cc20975b204bcd6931612025b977fa8a12..167f5b5c251a12401d04c87ef6b1abc1d6614a69 100644
 --- a/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
 +++ b/src/main/java/net/minecraft/server/network/ServerConnectionListener.java
-@@ -116,6 +116,7 @@ public class ServerConnectionListener {
+@@ -117,6 +117,7 @@ public class ServerConnectionListener {
                      pending.add(object); // Paper
                      ((Connection) object).configurePacketHandler(channelpipeline);
                      ((Connection) object).setListenerForServerboundHandshake(new ServerHandshakePacketListenerImpl(ServerConnectionListener.this.server, (Connection) object));
