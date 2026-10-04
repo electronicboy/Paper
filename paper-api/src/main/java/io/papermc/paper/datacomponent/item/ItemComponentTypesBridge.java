@@ -138,4 +138,6 @@ interface ItemComponentTypesBridge {
     CookingFuel.Builder cookingFuel();
 
     Compostable compostable(ResolvableInt layers);
+
+    DebugStickState.Builder debugStickState();
 }

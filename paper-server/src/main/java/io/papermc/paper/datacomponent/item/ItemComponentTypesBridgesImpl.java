@@ -323,4 +323,9 @@ public final class ItemComponentTypesBridgesImpl implements ItemComponentTypesBr
     public Compostable compostable(final ResolvableInt layers) {
         return new PaperCompostable(new net.minecraft.world.item.component.Compostable(PaperResolvableInt.toVanilla(layers)));
     }
+
+    @Override
+    public DebugStickState.Builder debugStickState() {
+        return new PaperDebugStickState.BuilderImpl();
+    }
 }

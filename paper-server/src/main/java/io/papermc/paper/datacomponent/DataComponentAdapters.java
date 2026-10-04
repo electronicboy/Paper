@@ -15,6 +15,7 @@ import io.papermc.paper.datacomponent.item.PaperCookingFuel;
 import io.papermc.paper.datacomponent.item.PaperCustomModelData;
 import io.papermc.paper.datacomponent.item.PaperDamageResistant;
 import io.papermc.paper.datacomponent.item.PaperDeathProtection;
+import io.papermc.paper.datacomponent.item.PaperDebugStickState;
 import io.papermc.paper.datacomponent.item.PaperDyedItemColor;
 import io.papermc.paper.datacomponent.item.PaperEnchantable;
 import io.papermc.paper.datacomponent.item.PaperEquippable;
@@ -157,7 +158,7 @@ public final class DataComponentAdapters {
         register(DataComponents.WRITTEN_BOOK_CONTENT, PaperWrittenBookContent::new);
         register(DataComponents.WRITABLE_BOOK_CONTENT, PaperWritableBookContent::new);
         register(DataComponents.TRIM, PaperItemArmorTrim::new);
-        // debug stick state
+        register(DataComponents.DEBUG_STICK_STATE, PaperDebugStickState::new);
         // entity data
         // bucket entity data
         // block entity data

@@ -52,7 +52,6 @@ public class RegistryConstantsTest {
             DataComponents.CUSTOM_DATA,
             DataComponents.ENTITY_DATA,
             DataComponents.BEES,
-            DataComponents.DEBUG_STICK_STATE,
             DataComponents.BLOCK_ENTITY_DATA,
             DataComponents.BUCKET_ENTITY_DATA,
             DataComponents.LOCK,

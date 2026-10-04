@@ -14,6 +14,7 @@ import io.papermc.paper.datacomponent.item.Consumable;
 import io.papermc.paper.datacomponent.item.CookingFuel;
 import io.papermc.paper.datacomponent.item.CustomModelData;
 import io.papermc.paper.datacomponent.item.DamageResistant;
+import io.papermc.paper.datacomponent.item.DebugStickState;
 import io.papermc.paper.datacomponent.item.DeathProtection;
 import io.papermc.paper.datacomponent.item.DyedItemColor;
 import io.papermc.paper.datacomponent.item.Enchantable;
@@ -295,7 +296,10 @@ public final class DataComponentTypes {
      * Holds the trims applied to an item in recipes
      */
     public static final DataComponentType.Valued<ItemArmorTrim> TRIM = valued("trim");
-    // debug_stick_state - Block Property API
+    /**
+     * Holds the block property currently selected by a debug stick, per block type.
+     */
+    public static final DataComponentType.Valued<DebugStickState> DEBUG_STICK_STATE = valued("debug_stick_state");
     // entity_data
     // bucket_entity_data
     // block_entity_data
