@@ -2,6 +2,8 @@ package io.papermc.paper.datacomponent.item;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.google.common.base.Preconditions;
+import io.papermc.paper.loot.number.PaperResolvableInt;
+import io.papermc.paper.loot.number.ResolvableInt;
 import io.papermc.paper.registry.data.util.Conversions;
 import io.papermc.paper.registry.set.PaperRegistrySets;
 import io.papermc.paper.registry.set.RegistryKeySet;
@@ -315,5 +317,10 @@ public final class ItemComponentTypesBridgesImpl implements ItemComponentTypesBr
     @Override
     public CookingFuel.Builder cookingFuel() {
         return new PaperCookingFuel.BuilderImpl();
+    }
+
+    @Override
+    public Compostable compostable(final ResolvableInt layers) {
+        return new PaperCompostable(new net.minecraft.world.item.component.Compostable(PaperResolvableInt.toVanilla(layers)));
     }
 }

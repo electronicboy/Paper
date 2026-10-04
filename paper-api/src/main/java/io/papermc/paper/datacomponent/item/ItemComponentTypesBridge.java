@@ -1,6 +1,7 @@
 package io.papermc.paper.datacomponent.item;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
+import io.papermc.paper.loot.number.ResolvableInt;
 import io.papermc.paper.registry.set.RegistryKeySet;
 import io.papermc.paper.text.Filtered;
 import java.util.Optional;
@@ -135,4 +136,6 @@ interface ItemComponentTypesBridge {
     BrewingFuel.Builder brewingFuel();
 
     CookingFuel.Builder cookingFuel();
+
+    Compostable compostable(ResolvableInt layers);
 }

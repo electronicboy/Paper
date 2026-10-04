@@ -9,6 +9,7 @@ import io.papermc.paper.datacomponent.item.PaperBlocksAttacks;
 import io.papermc.paper.datacomponent.item.PaperBrewingFuel;
 import io.papermc.paper.datacomponent.item.PaperBundleContents;
 import io.papermc.paper.datacomponent.item.PaperChargedProjectiles;
+import io.papermc.paper.datacomponent.item.PaperCompostable;
 import io.papermc.paper.datacomponent.item.PaperConsumable;
 import io.papermc.paper.datacomponent.item.PaperCookingFuel;
 import io.papermc.paper.datacomponent.item.PaperCustomModelData;
@@ -230,6 +231,7 @@ public final class DataComponentAdapters {
         register(DataComponents.CUSHION_COLOR, nms -> DyeColor.getByWoolData((byte) nms.getId()), api -> net.minecraft.world.item.DyeColor.byId(api.getWoolData()));
         register(DataComponents.COOKING_FUEL, PaperCookingFuel::new);
         register(DataComponents.BREWING_FUEL, PaperBrewingFuel::new);
+        register(DataComponents.COMPOSTABLE, PaperCompostable::new);
 
         for (final ResourceKey<DataComponentType<?>> key : BuiltInRegistries.DATA_COMPONENT_TYPE.registryKeySet()) {
             if (!ADAPTERS.containsKey(key)) {

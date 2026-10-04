@@ -9,6 +9,7 @@ import io.papermc.paper.datacomponent.item.BlocksAttacks;
 import io.papermc.paper.datacomponent.item.BrewingFuel;
 import io.papermc.paper.datacomponent.item.BundleContents;
 import io.papermc.paper.datacomponent.item.ChargedProjectiles;
+import io.papermc.paper.datacomponent.item.Compostable;
 import io.papermc.paper.datacomponent.item.Consumable;
 import io.papermc.paper.datacomponent.item.CookingFuel;
 import io.papermc.paper.datacomponent.item.CustomModelData;
@@ -411,6 +412,10 @@ public final class DataComponentTypes {
      * Describes an item that can be used as fuel for a brewing stand.
      */
     public static final DataComponentType.Valued<BrewingFuel> BREWING_FUEL = valued("brewing_fuel");
+    /**
+     * Describes an item that can be inserted into a composter.
+     */
+    public static final DataComponentType.Valued<Compostable> COMPOSTABLE = valued("compostable");
 
     private static DataComponentType.NonValued unvalued(@KeyPattern.Value final String key) {
         final DataComponentType dataComponentType = Registry.DATA_COMPONENT_TYPE.getOrThrow(Key.key(Key.MINECRAFT_NAMESPACE, key));
