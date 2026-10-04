@@ -1,9 +1,13 @@
 package io.papermc.paper.item;
 
+import io.papermc.paper.block.property.BlockProperties;
 import io.papermc.paper.datacomponent.DataComponentType;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ChargedProjectiles;
+import io.papermc.paper.datacomponent.item.Compostable;
+import io.papermc.paper.datacomponent.item.CookingFuel;
 import io.papermc.paper.datacomponent.item.CustomModelData;
+import io.papermc.paper.datacomponent.item.DebugStickState;
 import io.papermc.paper.datacomponent.item.DyedItemColor;
 import io.papermc.paper.datacomponent.item.Fireworks;
 import io.papermc.paper.datacomponent.item.FoodProperties;
@@ -11,12 +15,17 @@ import io.papermc.paper.datacomponent.item.ItemArmorTrim;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
 import io.papermc.paper.datacomponent.item.ItemEnchantments;
 import io.papermc.paper.datacomponent.item.ItemLore;
+import io.papermc.paper.datacomponent.item.ItemPredicate;
 import io.papermc.paper.datacomponent.item.JukeboxPlayable;
+import io.papermc.paper.datacomponent.item.LockCode;
 import io.papermc.paper.datacomponent.item.MapId;
 import io.papermc.paper.datacomponent.item.PotDecorations;
 import io.papermc.paper.datacomponent.item.Tool;
 import io.papermc.paper.datacomponent.item.TooltipDisplay;
+import io.papermc.paper.loot.number.ResolvableFloat;
+import io.papermc.paper.loot.number.ResolvableInt;
 import io.papermc.paper.registry.RegistryKey;
+import io.papermc.paper.registry.keys.ItemTypeKeys;
 import io.papermc.paper.registry.keys.tags.BlockTypeTagKeys;
 import io.papermc.paper.registry.set.RegistrySet;
 import java.util.List;
@@ -359,6 +368,88 @@ class ItemStackDataComponentTest {
 
         Assertions.assertNotNull(data);
         Assertions.assertEquals(JukeboxSong.FIVE, data.jukeboxSong());
+    }
+
+    @Test
+    void testCompostableVanillaReference() {
+        final Compostable compostable = ItemStack.of(Material.OAK_SAPLING).getData(DataComponentTypes.COMPOSTABLE);
+
+        Assertions.assertNotNull(compostable);
+        final ResolvableInt.Reference layers = Assertions.assertInstanceOf(ResolvableInt.Reference.class, compostable.layers());
+        Assertions.assertEquals(Key.key("compostable/low"), layers.key());
+    }
+
+    @Test
+    void testCompostableRoundTrip() {
+        final ItemStack stack = ItemStack.of(Material.STONE);
+        stack.setData(DataComponentTypes.COMPOSTABLE, Compostable.compostable(ResolvableInt.constant(1)));
+
+        final ResolvableInt.Constant constant = Assertions.assertInstanceOf(ResolvableInt.Constant.class, stack.getData(DataComponentTypes.COMPOSTABLE).layers());
+        Assertions.assertEquals(1, constant.getValue());
+
+        stack.setData(DataComponentTypes.COMPOSTABLE, Compostable.compostable(ResolvableInt.reference(Key.key("compostable/medium"))));
+        final ResolvableInt.Reference reference = Assertions.assertInstanceOf(ResolvableInt.Reference.class, stack.getData(DataComponentTypes.COMPOSTABLE).layers());
+        Assertions.assertEquals(Key.key("compostable/medium"), reference.key());
+    }
+
+    @Test
+    void testCookingFuelReferenceRoundTrip() {
+        final ItemStack stack = ItemStack.of(Material.STONE);
+        stack.setData(DataComponentTypes.COOKING_FUEL, CookingFuel.cookingFuel()
+            .burnTime(ResolvableInt.reference(Key.key("cooking/time_coal")))
+            .speedMultiplier(2.0F)
+            .build());
+
+        final CookingFuel fuel = stack.getData(DataComponentTypes.COOKING_FUEL);
+        Assertions.assertEquals(Key.key("cooking/time_coal"), Assertions.assertInstanceOf(ResolvableInt.Reference.class, fuel.burnTime()).key());
+        Assertions.assertEquals(2.0F, Assertions.assertInstanceOf(ResolvableFloat.Constant.class, fuel.speedMultiplier()).getValue());
+    }
+
+    @Test
+    void testDebugStickState() {
+        final ItemStack stack = ItemStack.of(Material.DEBUG_STICK);
+        stack.setData(DataComponentTypes.DEBUG_STICK_STATE, DebugStickState.debugStickState()
+            .property(BlockType.OAK_STAIRS, BlockProperties.HORIZONTAL_FACING)
+            .build());
+
+        Assertions.assertEquals(
+            Map.of(BlockType.OAK_STAIRS, BlockProperties.HORIZONTAL_FACING),
+            stack.getData(DataComponentTypes.DEBUG_STICK_STATE).properties()
+        );
+        Assertions.assertThrows(IllegalArgumentException.class, () -> DebugStickState.debugStickState().property(BlockType.STONE, BlockProperties.HORIZONTAL_FACING));
+    }
+
+    @Test
+    void testLock() {
+        final ItemStack key = ItemStack.of(Material.TRIPWIRE_HOOK);
+        key.setData(DataComponentTypes.CUSTOM_NAME, Component.text("key"));
+
+        final ItemPredicate predicate = ItemPredicate.itemPredicate()
+            .items(RegistrySet.keySet(RegistryKey.ITEM, ItemTypeKeys.TRIPWIRE_HOOK))
+            .count(1, 16)
+            .exactValue(DataComponentTypes.CUSTOM_NAME, Component.text("key"))
+            .requireComponent(DataComponentTypes.CUSTOM_NAME)
+            .build();
+
+        final ItemStack chest = ItemStack.of(Material.CHEST);
+        chest.setData(DataComponentTypes.LOCK, LockCode.lockCode(predicate));
+
+        final ItemPredicate read = chest.getData(DataComponentTypes.LOCK).predicate();
+        Assertions.assertEquals(1, read.minCount());
+        Assertions.assertEquals(16, read.maxCount());
+        Assertions.assertEquals(Component.text("key"), read.exactValue(DataComponentTypes.CUSTOM_NAME));
+        Assertions.assertEquals(java.util.Set.of(DataComponentTypes.CUSTOM_NAME), read.exactComponentTypes());
+        Assertions.assertEquals(java.util.Set.of(DataComponentTypes.CUSTOM_NAME), read.requiredComponentTypes());
+        Assertions.assertTrue(read.items().contains(ItemTypeKeys.TRIPWIRE_HOOK));
+
+        Assertions.assertTrue(read.test(key));
+        Assertions.assertFalse(read.test(ItemStack.of(Material.TRIPWIRE_HOOK)));
+        Assertions.assertFalse(read.test(key.withType(Material.STICK)));
+        Assertions.assertFalse(read.test(key.asQuantity(17)));
+
+        final ItemPredicate matching = ItemPredicate.matching(key);
+        Assertions.assertTrue(matching.test(key.asQuantity(5)));
+        Assertions.assertFalse(matching.test(ItemStack.of(Material.TRIPWIRE_HOOK)));
     }
 
     private static <T, M extends ItemMeta> void testWithMeta(final ItemStack stack, final DataComponentType.Valued<T> type, final T value, final Class<M> metaType, final Function<M, T> metaGetter, final BiConsumer<M, T> metaSetter) {
