@@ -328,4 +328,21 @@ public final class ItemComponentTypesBridgesImpl implements ItemComponentTypesBr
     public DebugStickState.Builder debugStickState() {
         return new PaperDebugStickState.BuilderImpl();
     }
+
+    @Override
+    public ItemPredicate.Builder itemPredicate() {
+        return new PaperItemPredicate.BuilderImpl();
+    }
+
+    @Override
+    public ItemPredicate itemPredicateMatching(final ItemStack itemStack) {
+        Preconditions.checkArgument(itemStack != null, "itemStack cannot be null");
+        return new PaperItemPredicate(CraftItemStack.asCriterionConditionItem(itemStack));
+    }
+
+    @Override
+    public LockCode lockCode(final ItemPredicate predicate) {
+        Preconditions.checkArgument(predicate != null, "predicate cannot be null");
+        return new PaperLockCode(new net.minecraft.world.LockCode(PaperItemPredicate.toVanilla(predicate)));
+    }
 }

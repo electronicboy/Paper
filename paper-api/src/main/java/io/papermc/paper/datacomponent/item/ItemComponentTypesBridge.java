@@ -140,4 +140,10 @@ interface ItemComponentTypesBridge {
     Compostable compostable(ResolvableInt layers);
 
     DebugStickState.Builder debugStickState();
+
+    ItemPredicate.Builder itemPredicate();
+
+    ItemPredicate itemPredicateMatching(ItemStack itemStack);
+
+    LockCode lockCode(ItemPredicate predicate);
 }

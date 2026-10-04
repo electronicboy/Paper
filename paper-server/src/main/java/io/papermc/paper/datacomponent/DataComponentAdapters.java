@@ -30,6 +30,7 @@ import io.papermc.paper.datacomponent.item.PaperItemLore;
 import io.papermc.paper.datacomponent.item.PaperItemTool;
 import io.papermc.paper.datacomponent.item.PaperJukeboxPlayable;
 import io.papermc.paper.datacomponent.item.PaperKineticWeapon;
+import io.papermc.paper.datacomponent.item.PaperLockCode;
 import io.papermc.paper.datacomponent.item.PaperLodestoneTracker;
 import io.papermc.paper.datacomponent.item.PaperMapDecorations;
 import io.papermc.paper.datacomponent.item.PaperMapId;
@@ -185,7 +186,7 @@ public final class DataComponentAdapters {
         register(DataComponents.BLOCK_STATE, PaperBlockItemDataProperties::new);
         // bees
         register(DataComponents.SULFUR_CUBE_CONTENT, PaperSulfurCubeContent::new);
-        // register(DataComponents.LOCK, PaperLockCode::new);
+        register(DataComponents.LOCK, PaperLockCode::new);
         register(DataComponents.CONTAINER_LOOT, PaperSeededContainerLoot::new);
         register(DataComponents.BREAK_SOUND, nms -> PaperAdventure.asAdventure(nms.value().location()), PaperAdventure::resolveSound);
         register(DataComponents.BLOCKS_ATTACKS, PaperBlocksAttacks::new);

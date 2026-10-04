@@ -29,6 +29,7 @@ import io.papermc.paper.datacomponent.item.ItemEnchantments;
 import io.papermc.paper.datacomponent.item.ItemLore;
 import io.papermc.paper.datacomponent.item.JukeboxPlayable;
 import io.papermc.paper.datacomponent.item.KineticWeapon;
+import io.papermc.paper.datacomponent.item.LockCode;
 import io.papermc.paper.datacomponent.item.LodestoneTracker;
 import io.papermc.paper.datacomponent.item.MapDecorations;
 import io.papermc.paper.datacomponent.item.MapId;
@@ -365,14 +366,11 @@ public final class DataComponentTypes {
     public static final DataComponentType.Valued<BlockItemDataProperties> BLOCK_DATA = valued("block_state");
     // bees
     public static final DataComponentType.Valued<SulfurCubeContent> SULFUR_CUBE_CONTENT = valued("sulfur_cube_content");
-    // /**
-    //  * Holds the lock state of a container-like block,
-    //  * copied to container block when placed.
-    //  * <br>
-    //  * An item with a custom name of the same value must be used
-    //  * to open this container.
-    //  */
-    // public static final DataComponentType.Valued<LockCode> LOCK = valued("lock");
+    /**
+     * Holds the lock state of a container-like block,
+     * copied to container block when placed.
+     */
+    public static final DataComponentType.Valued<LockCode> LOCK = valued("lock");
     /**
      * Holds the unresolved loot table and seed of a container-like block.
      */
