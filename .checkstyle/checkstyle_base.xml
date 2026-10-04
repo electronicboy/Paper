@@ -124,7 +124,9 @@
         </module>
         <module name="JavadocMissingLeadingAsterisk"/>
         <module name="JavadocMissingWhitespaceAfterAsterisk"/>
-        <module name="JavadocStyle"/> <!--checks all, but doesn't require. If we have a doc, it should be valid-->
+        <module name="JavadocStyle"> <!--checks all, but doesn't require. If we have a doc, it should be valid-->
+            <property name="endOfSentenceFormat" value="([.?!:][ \t\n\r\f&lt;])|([.?!:]$)"/><!--default but allow ':' to end a "sentence", violation message is still unclear tho-->
+        </module>
         <module name="JavadocTagContinuationIndentation"/>
         <module name="JavadocType"/> <!--checks all, but doesn't require. If we have a doc, it should be valid-->
         <module name="NonEmptyAtclauseDescription"/>

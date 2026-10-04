@@ -297,7 +297,7 @@ index 0000000000000000000000000000000000000000..fff7a796a61542213bdaa417d44e25cd
 +    }
 +}
 diff --git a/ca/spottedleaf/moonrise/paper/PaperHooks.java b/ca/spottedleaf/moonrise/paper/PaperHooks.java
-index 4a62c50d0b4fe82c3aacaa56b303b9699120c778..92238518c25dd765b356ff628fd373997464ea82 100644
+index aa14dd369d5d2c5c843839f289afdc39c200f0c3..76f990f150f040b1ad6d7d5b91cfb34ebd6f436a 100644
 --- a/ca/spottedleaf/moonrise/paper/PaperHooks.java
 +++ b/ca/spottedleaf/moonrise/paper/PaperHooks.java
 @@ -13,6 +13,7 @@ import net.minecraft.server.level.ChunkHolder;
@@ -28511,7 +28511,7 @@ index 47a0e17e4fed94828e02c7f4159d32195158f6cc..46e7478bd96e42487cf0fc467b6b9b83
              "Server weather",
              () -> String.format(
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index bae5ed2cdd6627a0934f0a7bbf85621db5bed2d8..b3b00964d91804f108b7bc5b5ffc853a2ac62f16 100644
+index 3272f89607e6fd4f2fee223ecefde0774f0a0c1f..b3132c6dde9b371e9580458cd7602ceaeca29945 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -210,7 +210,7 @@ import net.minecraft.world.scores.criteria.ObjectiveCriteria;
@@ -33045,7 +33045,7 @@ index 1338213c0c918301a8fbc232b25d55804bda9cf9..8e89405ed73e68b641fd8a47963c60a1
  
      @Override
 diff --git a/net/minecraft/world/level/block/state/properties/Property.java b/net/minecraft/world/level/block/state/properties/Property.java
-index b95665559d646ab8de313a19dadc197a1e8be02c..b82b935272efbc7a7518e148f665f4f24fa96814 100644
+index c60db1d2cfb955cf30b29b1dc3959f9bc679ebb9..3f2eedd9ef3931efbd0020e19eae1024c8bc2cf8 100644
 --- a/net/minecraft/world/level/block/state/properties/Property.java
 +++ b/net/minecraft/world/level/block/state/properties/Property.java
 @@ -10,7 +10,7 @@ import java.util.stream.Stream;
@@ -33054,10 +33054,10 @@ index b95665559d646ab8de313a19dadc197a1e8be02c..b82b935272efbc7a7518e148f665f4f2
  
 -public abstract class Property<T extends Comparable<T>> {
 +public abstract class Property<T extends Comparable<T>> implements ca.spottedleaf.moonrise.patches.blockstate_propertyaccess.PropertyAccess<T> { // Paper - optimise blockstate property access
+     public static final com.google.common.collect.Multimap<String, Property<?>> PROPERTY_MULTIMAP = com.google.common.collect.Multimaps.newSetMultimap(new java.util.HashMap<>(), com.google.common.collect.Sets::newIdentityHashSet); // Paper - property API
      private final Class<T> clazz;
      private final String name;
-     private @Nullable Integer hashCode;
-@@ -23,9 +23,38 @@ public abstract class Property<T extends Comparable<T>> {
+@@ -24,9 +24,38 @@ public abstract class Property<T extends Comparable<T>> {
          );
      private final Codec<Property.Value<T>> valueCodec = this.codec.xmap(this::value, Property.Value::value);
  
@@ -33093,9 +33093,9 @@ index b95665559d646ab8de313a19dadc197a1e8be02c..b82b935272efbc7a7518e148f665f4f2
          this.clazz = clazz;
          this.name = name;
 +        this.id = ID_GENERATOR.getAndIncrement(); // Paper - optimise blockstate property access
+         PROPERTY_MULTIMAP.put(this.name, this); // Paper - property API
      }
  
-     public Property.Value<T> value(final T value) {
 diff --git a/net/minecraft/world/level/chunk/ChunkAccess.java b/net/minecraft/world/level/chunk/ChunkAccess.java
 index 12882e7448ff9b7febdb8475e6e14e87d23d87ae..807529f25ed0ef03beef6746f706d8a215e2b54c 100644
 --- a/net/minecraft/world/level/chunk/ChunkAccess.java

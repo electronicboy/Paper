@@ -1,5 +1,6 @@
 package org.bukkit.block.data;
 
+import io.papermc.paper.block.property.BlockPropertyHolder;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,7 +17,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public interface BlockData extends Cloneable {
+public interface BlockData extends Cloneable, BlockPropertyHolder.Mutable {
 
     /**
      * Get the Material represented by this block data.
