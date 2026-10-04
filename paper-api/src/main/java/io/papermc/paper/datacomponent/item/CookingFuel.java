@@ -36,6 +36,23 @@ public interface CookingFuel {
      */
     @ApiStatus.NonExtendable
     interface Builder extends DataComponentBuilder<CookingFuel> {
+        /**
+         * @param burnTime the time, in ticks, for which this fuel will burn
+         * @return the builder for chaining
+         * @see #burnTime()
+         */
+        @Contract(value = "_ -> this", mutates = "this")
+        default Builder burnTime(final int burnTime) {
+            return this.burnTime(ResolvableInt.constant(burnTime));
+        }
+
+        /**
+         * @param burnTime the time, in ticks, for which this fuel will burn
+         * @return the builder for chaining
+         * @see #burnTime()
+         */
+        @Contract(value = "_ -> this", mutates = "this")
+        Builder burnTime(ResolvableInt burnTime);
 
         /**
          * @param speedMultiplier the speed of the cooking/smelting
@@ -43,14 +60,16 @@ public interface CookingFuel {
          * @see #speedMultiplier()
          */
         @Contract(value = "_ -> this", mutates = "this")
-        Builder speedMultiplier(float speedMultiplier);
+        default Builder speedMultiplier(final float speedMultiplier) {
+            return this.speedMultiplier(ResolvableFloat.constant(speedMultiplier));
+        }
 
         /**
-         * @param burnTime the time, in ticks, for which this fuel will burn
+         * @param speedMultiplier the speed of the cooking/smelting
          * @return the builder for chaining
          * @see #speedMultiplier()
          */
         @Contract(value = "_ -> this", mutates = "this")
-        Builder burnTime(int burnTime);
+        Builder speedMultiplier(ResolvableFloat speedMultiplier);
     }
 }

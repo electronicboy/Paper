@@ -1,5 +1,5 @@
 /**
- * Package containing maths-related API, including position API.
+ * Package containing numbers that are resolved against a loot context, such as those used by item components.
  */
 @NullMarked
 @ApiStatus.Experimental

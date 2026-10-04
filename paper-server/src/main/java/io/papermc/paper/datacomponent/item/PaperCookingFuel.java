@@ -2,8 +2,8 @@ package io.papermc.paper.datacomponent.item;
 
 import io.papermc.paper.loot.number.PaperResolvableFloat;
 import io.papermc.paper.loot.number.PaperResolvableInt;
-import net.minecraft.world.level.storage.loot.providers.number.floats.ResolvableFloat;
-import net.minecraft.world.level.storage.loot.providers.number.ints.ResolvableInt;
+import io.papermc.paper.loot.number.ResolvableFloat;
+import io.papermc.paper.loot.number.ResolvableInt;
 import org.bukkit.craftbukkit.util.Handleable;
 
 public record PaperCookingFuel(
@@ -16,40 +16,35 @@ public record PaperCookingFuel(
     }
 
     @Override
-    public io.papermc.paper.loot.number.ResolvableInt burnTime() {
+    public ResolvableInt burnTime() {
         return PaperResolvableInt.fromVanilla(this.impl.burnTime());
     }
 
     @Override
-    public io.papermc.paper.loot.number.ResolvableFloat speedMultiplier() {
+    public ResolvableFloat speedMultiplier() {
         return PaperResolvableFloat.fromVanilla(this.impl.speedMultiplier());
     }
 
     static final class BuilderImpl implements CookingFuel.Builder {
 
-        private int burnTime = 0;
-        private float speedMultiplier = 1.0F;
+        private net.minecraft.world.level.storage.loot.providers.number.ints.ResolvableInt burnTime = new net.minecraft.world.level.storage.loot.providers.number.ints.ResolvableInt.Constant(0);
+        private net.minecraft.world.level.storage.loot.providers.number.floats.ResolvableFloat speedMultiplier = new net.minecraft.world.level.storage.loot.providers.number.floats.ResolvableFloat.Constant(1.0F);
 
         @Override
-        public Builder burnTime(final int burnTime) {
-            this.burnTime = burnTime;
+        public Builder burnTime(final ResolvableInt burnTime) {
+            this.burnTime = PaperResolvableInt.toVanilla(burnTime);
             return this;
         }
 
         @Override
-        public Builder speedMultiplier(final float speedMultiplier) {
-            this.speedMultiplier = speedMultiplier;
+        public Builder speedMultiplier(final ResolvableFloat speedMultiplier) {
+            this.speedMultiplier = PaperResolvableFloat.toVanilla(speedMultiplier);
             return this;
         }
 
         @Override
         public CookingFuel build() {
-            return new PaperCookingFuel(
-                new net.minecraft.world.item.component.CookingFuel(
-                    new ResolvableInt.Constant(this.burnTime),
-                    new ResolvableFloat.Constant(this.speedMultiplier)
-                )
-            );
+            return new PaperCookingFuel(new net.minecraft.world.item.component.CookingFuel(this.burnTime, this.speedMultiplier));
         }
     }
 }

@@ -36,6 +36,15 @@ public interface BrewingFuel {
      */
     @ApiStatus.NonExtendable
     interface Builder extends DataComponentBuilder<BrewingFuel> {
+        /**
+         * @param uses the number of times this fuel will brew before being consumed
+         * @return the builder for chaining
+         * @see #uses()
+         */
+        @Contract(value = "_ -> this", mutates = "this")
+        default Builder uses(final int uses) {
+            return this.uses(ResolvableInt.constant(uses));
+        }
 
         /**
          * @param uses the number of times this fuel will brew before being consumed
@@ -43,7 +52,7 @@ public interface BrewingFuel {
          * @see #uses()
          */
         @Contract(value = "_ -> this", mutates = "this")
-        Builder uses(int uses);
+        Builder uses(ResolvableInt uses);
 
         /**
          * @param speedMultiplier the speed of the brewing
@@ -51,6 +60,16 @@ public interface BrewingFuel {
          * @see #speedMultiplier()
          */
         @Contract(value = "_ -> this", mutates = "this")
-        Builder speedMultiplier(float speedMultiplier);
+        default Builder speedMultiplier(final float speedMultiplier) {
+            return this.speedMultiplier(ResolvableFloat.constant(speedMultiplier));
+        }
+
+        /**
+         * @param speedMultiplier the speed of the brewing
+         * @return the builder for chaining
+         * @see #speedMultiplier()
+         */
+        @Contract(value = "_ -> this", mutates = "this")
+        Builder speedMultiplier(ResolvableFloat speedMultiplier);
     }
 }
