@@ -1,6 +1,6 @@
 package io.papermc.paper.block.stateprovider;
 
-import io.papermc.paper.block.BlockPredicate;
+import io.papermc.paper.block.predicate.PositionalBlockPredicate;
 import java.util.List;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -26,6 +26,6 @@ public interface RuleBasedBlockStateProvider extends BlockStateProvider {
     @Contract(pure = true)
     @Unmodifiable List<Rule> rules();
 
-    record Rule(BlockPredicate ifTrue, BlockStateProvider thenProvide) {
+    record Rule(PositionalBlockPredicate ifTrue, BlockStateProvider thenProvide) {
     }
 }

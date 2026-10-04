@@ -1,6 +1,6 @@
 package io.papermc.paper.datacomponent.item.blocktransformer;
 
-import io.papermc.paper.block.BlockPredicate;
+import io.papermc.paper.block.predicate.PositionalBlockPredicate;
 import io.papermc.paper.block.stateprovider.BlockStateProvider;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -17,6 +17,6 @@ interface BlockTransformTypesBridge {
 
     BlockTransformData.Builder blockTransformData(BlockStateProvider blockStateProvider);
 
-    BlockTransformData.Builder blockTransformData(BlockPredicate predicate, BlockStateProvider blockStateProvider);
+    BlockTransformData.Builder blockTransformData(PositionalBlockPredicate predicate, BlockStateProvider blockStateProvider);
 
 }

@@ -1,6 +1,6 @@
 package io.papermc.paper.block.stateprovider;
 
-import io.papermc.paper.block.PaperBlockPredicate;
+import io.papermc.paper.block.predicate.PaperPositionalBlockPredicate;
 import io.papermc.paper.registry.PaperRegistries;
 import io.papermc.paper.registry.RegistryKey;
 import io.papermc.paper.registry.set.PaperRegistrySets;
@@ -58,7 +58,7 @@ public final class PaperBlockStateProvider {
                 }
                 final List<RuleBasedStateProvider.Rule> rules = ruleBased.rules().stream()
                     .map(rule -> new RuleBasedStateProvider.Rule(
-                        PaperBlockPredicate.toVanilla(rule.ifTrue()),
+                        PaperPositionalBlockPredicate.toVanilla(rule.ifTrue()),
                         Holder.direct(toVanilla(rule.thenProvide()))
                     ))
                     .toList();
@@ -95,9 +95,7 @@ public final class PaperBlockStateProvider {
                 fallback == null ? null : toApi(fallback.value()),
                 rules.stream()
                     .map(rule -> BlockStateProvider.rule(
-                        rule.ifTrue() == net.minecraft.world.level.levelgen.blockpredicates.BlockPredicate.alwaysTrue()
-                            ? io.papermc.paper.block.BlockPredicate.predicate().build()
-                            : PaperBlockPredicate.toApi(rule.ifTrue()),
+                        PaperPositionalBlockPredicate.toApi(rule.ifTrue()),
                         toApi(rule.then().value())
                     ))
                     .toList()

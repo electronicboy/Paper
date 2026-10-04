@@ -1,6 +1,6 @@
 package io.papermc.paper.datacomponent.item.blocktransformer;
 
-import io.papermc.paper.block.BlockPredicate;
+import io.papermc.paper.block.predicate.PositionalBlockPredicate;
 import io.papermc.paper.block.stateprovider.BlockStateProvider;
 import io.papermc.paper.datacomponent.BuildableDataComponent;
 import io.papermc.paper.datacomponent.DataComponentBuilder;
@@ -23,7 +23,7 @@ public interface BlockTransformData extends BuildableDataComponent<BlockTransfor
     }
 
     @Contract(value = "_, _ -> new", pure = true)
-    static BlockTransformData.Builder blockTransformData(final BlockPredicate predicate, final BlockStateProvider blockStateProvider) {
+    static BlockTransformData.Builder blockTransformData(final PositionalBlockPredicate predicate, final BlockStateProvider blockStateProvider) {
         return BlockTransformTypesBridge.bridge().blockTransformData(predicate, blockStateProvider);
     }
 

@@ -1,6 +1,6 @@
 package io.papermc.paper.block.stateprovider;
 
-import io.papermc.paper.block.BlockPredicate;
+import io.papermc.paper.block.predicate.PositionalBlockPredicate;
 import io.papermc.paper.registry.set.RegistryKeySet;
 import java.util.List;
 import org.bukkit.block.BlockFace;
@@ -124,7 +124,7 @@ public interface BlockStateProvider {
      * @return an immutable rule
      */
     @Contract(value = "_, _ -> new", pure = true)
-    static RuleBasedBlockStateProvider.Rule rule(final BlockPredicate ifTrue, final BlockStateProvider thenProvide) {
+    static RuleBasedBlockStateProvider.Rule rule(final PositionalBlockPredicate ifTrue, final BlockStateProvider thenProvide) {
         return new RuleBasedBlockStateProvider.Rule(ifTrue, thenProvide);
     }
 }

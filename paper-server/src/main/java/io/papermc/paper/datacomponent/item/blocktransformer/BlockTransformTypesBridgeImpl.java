@@ -1,6 +1,6 @@
 package io.papermc.paper.datacomponent.item.blocktransformer;
 
-import io.papermc.paper.block.BlockPredicate;
+import io.papermc.paper.block.predicate.PositionalBlockPredicate;
 import io.papermc.paper.block.stateprovider.BlockStateProvider;
 
 public final class BlockTransformTypesBridgeImpl implements BlockTransformTypesBridge {
@@ -11,7 +11,7 @@ public final class BlockTransformTypesBridgeImpl implements BlockTransformTypesB
     }
 
     @Override
-    public BlockTransformData.Builder blockTransformData(final BlockPredicate predicate, final BlockStateProvider blockStateProvider) {
+    public BlockTransformData.Builder blockTransformData(final PositionalBlockPredicate predicate, final BlockStateProvider blockStateProvider) {
         return new PaperBlockTransformData.BuilderImpl(predicate, blockStateProvider);
     }
 }
